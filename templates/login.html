@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Iniciar Sesión</h2>
+<form method="POST">
+    <div><label>Usuario</label><input type="text" name="username" required></div>
+    <div><label>Contraseña</label><input type="password" name="password" required></div>
+    <button type="submit">Ingresar</button>
+</form>
+<p>¿No tienes cuenta? <a href="{{ url_for('auth.registro') }}">Regístrate</a></p>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Registro de Usuario</h2>
+<form method="POST" enctype="multipart/form-data">
+    <div><label>Usuario</label><input type="text" name="username" required></div>
+    <div><label>Contraseña</label><input type="password" name="password" required></div>
+    <div><label>Nombre</label><input type="text" name="nombre" required></div>
+    <div><label>Apellidos</label><input type="text" name="apellidos" required></div>
+    <div><label>Email</label><input type="email" name="email" required></div>
+    <div><label>Rol</label>
+        <select name="rol">
+            <option value="admin">Administrador</option>
+            <option value="medico">Médico</option>
+            <option value="recepcionista">Recepcionista</option>
+            <option value="enfermeria">Enfermería</option>
+        </select>
+    </div>
+    <div><label>Foto de perfil</label><input type="file" name="foto_perfil" accept="image/*"></div>
+    <button type="submit">Registrar</button>
+</form>
+{% endblock %}

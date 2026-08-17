@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Usuarios</h2>
+<a href="{{ url_for('admin.crear_usuario') }}"><button>Crear nuevo usuario</button></a>
+<table>
+    <thead>
+        <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Foto</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+        {% for u in usuarios %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.nombre }} {{ u.apellidos }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.rol }}</td>
+            <td>
+                {% if u.foto_perfil %}
+                    <img src="{{ url_for('static', filename='uploads/' + u.foto_perfil) }}" width="40" height="40" style="border-radius:50%; object-fit:cover;">
+                {% else %}
+                    <img src="{{ url_for('static', filename='img/default-user.png') }}" width="40" height="40" style="border-radius:50%; object-fit:cover;">
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('admin.editar_usuario', id=u._id) }}">Editar</a>
+                <form method="POST" action="{{ url_for('admin.eliminar_usuario', id=u._id) }}" style="display:inline;">
+                    <button type="submit" onclick="return confirm('¿Eliminar?')">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

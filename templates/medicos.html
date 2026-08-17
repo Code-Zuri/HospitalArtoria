@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Médicos</h2>
+<div id="medicos-list"></div>
+<script>
+    fetch('/medicos/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(m => {
+                html += `<li>${m.nombre} ${m.apellidos} - ${m.especialidad}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('medicos-list').innerHTML = html;
+        });
+</script>
+{% endblock %}

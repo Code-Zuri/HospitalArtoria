@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Pacientes</h2>
+<div id="pacientes-list"></div>
+<script>
+    fetch('/pacientes/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(p => {
+                html += `<li>${p.nombre} ${p.apellidos} - ${p.email}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('pacientes-list').innerHTML = html;
+        });
+</script>
+<button id="btn-nuevo-pacientes">Nuevo Paciente</button>
+<div id="pacientes-list"></div>
+
+<!-- Modal -->
+<div id="pacientes-modal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <h2 class="modal-title">Nuevo Paciente</h2>
+        <form id="pacientes-form">
+            <input name="nombre" placeholder="Nombre">
+            <input name="apellidos" placeholder="Apellidos">
+            <input name="email" placeholder="Email">
+            <!-- más campos -->
+        </form>
+        <button id="btn-guardar-pacientes">Guardar</button>
+    </div>
+</div>
+{% endblock %}

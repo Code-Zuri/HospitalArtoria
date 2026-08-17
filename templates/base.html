@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Artoria</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/">Inicio</a></li>
+            {% if session.user_id %}
+                <li><a href="/pacientes">Pacientes</a></li>
+                <li><a href="/medicos">Médicos</a></li>
+                <li><a href="/citas">Citas</a></li>
+                <li><a href="/consultas">Consultas</a></li>
+                <li><a href="/diagnosticos">Diagnósticos</a></li>
+                <li><a href="/tratamientos">Tratamientos</a></li>
+                <li><a href="/hospitalizaciones">Hospitalizaciones</a></li>
+                <li><a href="/reportes">Reportes</a></li>
+                <li><a href="/machine-learning">ML</a></li>
+                {% if session.rol == 'admin' %}
+                    <li><a href="/admin/usuarios">Admin Usuarios</a></li>
+                {% endif %}
+                <li style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    {% if session.foto_perfil %}
+                        <img src="{{ url_for('static', filename='uploads/' + session.foto_perfil) }}" alt="foto" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='img/default-user.png') }}" alt="default" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                    {% endif %}
+                    <span>{{ session.username }} ({{ session.rol }})</span>
+                    <a href="{{ url_for('auth.logout') }}">Cerrar sesión</a>
+                </li>
+            {% else %}
+                <li><a href="{{ url_for('auth.login') }}">Iniciar sesión</a></li>
+                <li><a href="{{ url_for('auth.registro') }}">Registro</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

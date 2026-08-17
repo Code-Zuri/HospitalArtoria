@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Módulo de Machine Learning</h2>
+<div>
+    <h3>Riesgo de Cancelación de Citas (Clasificación)</h3>
+    <button id="btn-riesgo">Ejecutar Clasificación</button>
+    <div id="resultado-riesgo"></div>
+</div>
+<div>
+    <h3>Predicción de Demanda de Consultas (Regresión)</h3>
+    <button id="btn-demanda">Ejecutar Regresión</button>
+    <div id="resultado-demanda"></div>
+</div>
+<div>
+    <h3>Predicción de Costos (Regresión)</h3>
+    <button id="btn-costos">Ejecutar Regresión</button>
+    <div id="resultado-costos"></div>
+</div>
+<div>
+    <h3>Clustering de Pacientes (K-Means)</h3>
+    <button id="btn-cluster">Ejecutar K-Means</button>
+    <div id="resultado-cluster"></div>
+</div>
+<script>
+    document.getElementById('btn-riesgo').addEventListener('click', function() {
+        fetch('/reportes/api/ml/riesgo-cancelacion')
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('resultado-riesgo').innerHTML = `<p>Error: ${data.error}</p>`;
+                    return;
+                }
+                let html = `<p>Accuracy: ${data.metrics.accuracy}</p>
+                           <p>Precision: ${data.metrics.precision}</p>
+                           <p>Recall: ${data.metrics.recall}</p>
+                           <p>F1-Score: ${data.metrics.f1}</p>
+                           <p>Matriz de Confusión:</p><pre>${JSON.stringify(data.metrics.confusion_matrix, null, 2)}</pre>`;
+                document.getElementById('resultado-riesgo').innerHTML = html;
+            });
+    });
+
+    document.getElementById('btn-demanda').addEventListener('click', function() {
+        fetch('/reportes/api/ml/prediccion-demanda')
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('resultado-demanda').innerHTML = `<p>Error: ${data.error}</p>`;
+                    return;
+                }
+                let html = `<p>MAE: ${data.metricas.mae}</p>
+                           <p>MSE: ${data.metricas.mse}</p>
+                           <p>RMSE: ${data.metricas.rmse}</p>
+                           <p>R²: ${data.metricas.r2}</p>
+                           <p>MAPE: ${data.metricas.mape}%</p>
+                           <p>Predicciones próximos 7 días:</p>
+                           <ul>`;
+                data.fechas.forEach((f, i) => {
+                    html += `<li>${f}: ${data.predicciones_futuras[i].toFixed(0)} consultas</li>`;
+                });
+                html += '</ul>';
+                document.getElementById('resultado-demanda').innerHTML = html;
+            });
+    });
+
+    document.getElementById('btn-costos').addEventListener('click', function() {
+        fetch('/reportes/api/ml/prediccion-costos')
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('resultado-costos').innerHTML = `<p>Error: ${data.error}</p>`;
+                    return;
+                }
+                let html = `<p>MAE: ${data.metricas.mae}</p>
+                           <p>MSE: ${data.metricas.mse}</p>
+                           <p>RMSE: ${data.metricas.rmse}</p>
+                           <p>R²: ${data.metricas.r2}</p>
+                           <p>MAPE: ${data.metricas.mape}%</p>
+                           <p>Muestra de predicciones: ${data.predicciones.slice(0,5).join(', ')}</p>`;
+                document.getElementById('resultado-costos').innerHTML = html;
+            });
+    });
+
+    document.getElementById('btn-cluster').addEventListener('click', function() {
+        fetch('/reportes/api/ml/clustering-pacientes')
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    document.getElementById('resultado-cluster').innerHTML = '<p>No hay datos para clusterizar</p>';
+                    return;
+                }
+                let html = '<p>Clusters asignados (edad, número de consultas):</p><ul>';
+                data.forEach(p => {
+                    html += `<li>Edad: ${p.edad}, Consultas: ${p.num_consultas}, Cluster: ${p.cluster}</li>`;
+                });
+                html += '</ul>';
+                document.getElementById('resultado-cluster').innerHTML = html;
+            });
+    });
+</script>
+{% endblock %}

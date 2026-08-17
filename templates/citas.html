@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Citas</h2>
+<div id="citas-list"></div>
+<script>
+    fetch('/citas/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(c => {
+                html += `<li>${c.motivo} - ${c.fecha} - ${c.estado}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('citas-list').innerHTML = html;
+        });
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Tratamientos</h2>
+<div id="tratamientos-list"></div>
+<script>
+    fetch('/tratamientos/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(t => {
+                html += `<li>${t.tratamiento} - Duración: ${t.duracion} días</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('tratamientos-list').innerHTML = html;
+        });
+</script>
+{% endblock %}

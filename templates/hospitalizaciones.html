@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Hospitalizaciones</h2>
+<div id="hospitalizaciones-list"></div>
+<script>
+    fetch('/hospitalizaciones/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(h => {
+                html += `<li>Paciente: ${h.paciente_id} - Ingreso: ${h.fecha_ingreso} - Estado: ${h.estado}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('hospitalizaciones-list').innerHTML = html;
+        });
+</script>
+{% endblock %}

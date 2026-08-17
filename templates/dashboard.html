@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dashboard</h2>
+<div id="indicadores" class="kpi-grid"></div>
+<script>
+    fetch('/reportes/api/metricas')
+        .then(r => r.json())
+        .then(data => {
+            const div = document.getElementById('indicadores');
+            div.innerHTML = `
+                <div>Pacientes: ${data.pacientes}</div>
+                <div>Médicos: ${data.medicos}</div>
+                <div>Citas: ${data.citas}</div>
+                <div>Consultas: ${data.consultas}</div>
+                <div>Ingresos: $${data.ingresos}</div>
+                <div>Ocupación: ${data.ocupacion}%</div>
+            `;
+        });
+</script>
+{% endblock %}

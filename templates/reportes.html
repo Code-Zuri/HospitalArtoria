@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dashboard de Reportes</h2>
+<div id="indicadores" class="kpi-grid"></div>
+<canvas id="chartConsultas" width="400" height="200"></canvas>
+<canvas id="chartEspecialidades" width="400" height="200"></canvas>
+<canvas id="chartEnfermedades" width="400" height="200"></canvas>
+<script>
+    // Cargar métricas
+    fetch('/reportes/api/metricas')
+        .then(r => r.json())
+        .then(data => {
+            const div = document.getElementById('indicadores');
+            div.innerHTML = `
+                <div>Pacientes: ${data.pacientes}</div>
+                <div>Médicos: ${data.medicos}</div>
+                <div>Citas: ${data.citas}</div>
+                <div>Consultas: ${data.consultas}</div>
+                <div>Ingresos: $${data.ingresos}</div>
+                <div>Ocupación: ${data.ocupacion}%</div>
+            `;
+        });
+
+    // Consultas por mes
+    fetch('/reportes/api/consultas-por-mes')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartConsultas').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.mes),
+                    datasets: [{
+                        label: 'Consultas por mes',
+                        data: data.map(d => d.cantidad),
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true }
+            });
+        });
+
+    // Especialidades demanda
+    fetch('/reportes/api/especialidades-demanda')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartEspecialidades').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(d => d._id),
+                    datasets: [{
+                        label: 'Demanda por especialidad',
+                        data: data.map(d => d.cantidad),
+                        backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0']
+                    }]
+                }
+            });
+        });
+
+    // Enfermedades frecuentes
+    fetch('/reportes/api/enfermedades-frecuentes')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartEnfermedades').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d._id),
+                    datasets: [{
+                        label: 'Enfermedades frecuentes',
+                        data: data.map(d => d.cantidad),
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                }
+            });
+        });
+</script>
+{% endblock %}

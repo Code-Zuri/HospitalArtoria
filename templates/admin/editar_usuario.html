@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Editar Usuario</h2>
+<form method="POST" enctype="multipart/form-data">
+    <div><label>Nombre</label><input type="text" name="nombre" value="{{ usuario.nombre }}" required></div>
+    <div><label>Apellidos</label><input type="text" name="apellidos" value="{{ usuario.apellidos }}" required></div>
+    <div><label>Email</label><input type="email" name="email" value="{{ usuario.email }}" required></div>
+    <div><label>Rol</label>
+        <select name="rol">
+            <option value="admin" {% if usuario.rol=='admin' %}selected{% endif %}>Administrador</option>
+            <option value="medico" {% if usuario.rol=='medico' %}selected{% endif %}>Médico</option>
+            <option value="recepcionista" {% if usuario.rol=='recepcionista' %}selected{% endif %}>Recepcionista</option>
+            <option value="enfermeria" {% if usuario.rol=='enfermeria' %}selected{% endif %}>Enfermería</option>
+        </select>
+    </div>
+    <div><label>Contraseña (dejar en blanco para no cambiar)</label><input type="password" name="password"></div>
+    <div>
+        <label>Foto actual</label><br>
+        {% if usuario.foto_perfil %}
+            <img src="{{ url_for('static', filename='uploads/' + usuario.foto_perfil) }}" width="80">
+        {% else %}
+            <img src="{{ url_for('static', filename='img/default-user.png') }}" width="80">
+        {% endif %}
+    </div>
+    <div><label>Nueva foto</label><input type="file" name="foto_perfil" accept="image/*"></div>
+    <button type="submit">Actualizar</button>
+</form>
+{% endblock %}

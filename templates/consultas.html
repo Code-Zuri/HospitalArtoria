@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Consultas Médicas</h2>
+<div id="consultas-list"></div>
+<script>
+    fetch('/consultas/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(c => {
+                html += `<li>${c.motivo} - ${c.fecha} - Costo: $${c.costo || 0}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('consultas-list').innerHTML = html;
+        });
+</script>
+{% endblock %}
