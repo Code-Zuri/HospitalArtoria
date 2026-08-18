@@ -1,10 +1,161 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Iniciar Sesión</h2>
-<form method="POST">
-    <div><label>Usuario</label><input type="text" name="username" required></div>
-    <div><label>Contraseña</label><input type="password" name="password" required></div>
-    <button type="submit">Ingresar</button>
-</form>
-<p>¿No tienes cuenta? <a href="{{ url_for('auth.registro') }}">Regístrate</a></p>
+
+    <div id="loadingBar"></div>
+
+    <div class="auth-wrap">
+    <!-- ================= BRAND PANEL ================= -->
+    <div class="brand-panel">
+        <div class="grid-deco"></div>
+        <div class="brand-top">
+        <div class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-10-9.3C.3 7.7 2.4 4 6.2 4c2.1 0 3.6 1.1 4.4 2.4C11.4 5.1 12.9 4 15 4c3.8 0 5.9 3.7 4.2 7.7C17 16.4 12 21 12 21z"/></svg>
+        </div>
+        <div class="brand-name">Hospital Artoria<span>Suite clínica</span></div>
+        </div>
+    </div>
+
+    <!-- ================= FORM PANEL ================= -->
+    <div class="form-panel">
+        <div class="form-shell" id="formShell">
+
+        <div class="tabs">
+            <div class="tab-highlight" id="tabHighlight"></div>
+            <button class="tab-btn active" id="tabLogin">Iniciar sesión</button>
+            <button class="tab-btn" id="tabRegister">Solicitar cuenta</button>
+        </div>
+
+        <!-- ===== LOGIN ===== -->
+        <div class="form-view active" id="view-login">
+            <div class="kicker">Bienvenido de nuevo</div>
+            <h2 class="form-title">Inicia sesión</h2>
+            <p class="form-sub">Ingresa tus credenciales para acceder al panel administrativo.</p>
+
+            <form id="loginForm"  method="POST">
+                <div class="field">
+                    <label>Usuario</label>
+                    <div class="input-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+                        <input type="text" placeholder="Usuario" name="username" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Contraseña</label>
+                    <div class="input-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" placeholder="••••••••" name="password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">
+                    Acceder
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+            </form>
+            <div class="switch-note">¿No tienes cuenta? <a class="link-teal" id="goRegister">Solicitar una</a></div>
+        </div>
+
+        <!-- ===== REGISTER ===== -->
+        <div class="form-view" id="view-register">
+            <div class="kicker">Solicitar acceso</div>
+            <h2 class="form-title">Solicitar una cuenta</h2>
+            <p class="form-sub">Solicita acceso al panel administrativo de Hospital Artoria.</p>
+
+            
+
+            <div class="switch-note">¿Ya tienes cuenta? <a class="link-teal" id="goLogin">Inicia sesión</a></div>
+        </div>
+
+        </div>
+    </div>
+    </div>
+
+<div id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg">Listo</span></div>
+
+<script>
+lucide.createIcons();
+
+/* ---------- Loading bar ---------- */
+function showLoading(cb, delay=420){
+  const bar = document.getElementById('loadingBar');
+  anime.remove(bar);
+  bar.style.opacity = 1;
+  bar.style.width = '0%';
+  anime({ targets:bar, width:['0%','75%'], duration:delay*0.8, easing:'easeOutQuad' });
+  setTimeout(()=>{
+    anime({ targets:bar, width:'100%', duration:150, easing:'easeOutQuad', complete:()=>{
+      cb && cb();
+      anime({ targets:bar, opacity:0, duration:260, delay:120, easing:'easeOutQuad' });
+    }});
+  }, delay);
+}
+
+/* ---------- Toast ---------- */
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  anime.remove(toast);
+  anime.timeline()
+    .add({ targets: toast, translateX:'-50%', translateY:[14,0], opacity:[0,1], duration:280, easing:'easeOutCubic' })
+    .add({ targets: toast, opacity:[1,0], translateY:[0,8], duration:280, easing:'easeInCubic', delay:1700 });
+}
+
+/* ---------- Tabs / view switching ---------- */
+const tabLogin = document.getElementById('tabLogin');
+const tabRegister = document.getElementById('tabRegister');
+const tabHighlight = document.getElementById('tabHighlight');
+const viewLogin = document.getElementById('view-login');
+const viewRegister = document.getElementById('view-register');
+
+function switchTo(target){
+  const toLogin = target === 'login';
+  tabLogin.classList.toggle('active', toLogin);
+  tabRegister.classList.toggle('active', !toLogin);
+  anime({ targets: tabHighlight, translateX: toLogin ? '0%' : '100%', duration:320, easing:'easeOutCubic' });
+
+  const outView = toLogin ? viewRegister : viewLogin;
+  const inView = toLogin ? viewLogin : viewRegister;
+
+  anime({
+    targets: outView, opacity:[1,0], translateY:[0,-8], duration:180, easing:'easeInCubic',
+    complete: ()=>{
+      outView.classList.remove('active');
+      inView.classList.add('active');
+      anime({ targets: inView, opacity:[0,1], translateY:[8,0], duration:280, easing:'easeOutCubic' });
+      anime({ targets: inView.querySelectorAll('.field, .row-between, .terms-row, .btn-submit'), opacity:[0,1], translateY:[6,0], delay: anime.stagger(35), duration:280, easing:'easeOutCubic' });
+    }
+  });
+}
+tabLogin.addEventListener('click', ()=> !tabLogin.classList.contains('active') && switchTo('login'));
+tabRegister.addEventListener('click', ()=> !tabRegister.classList.contains('active') && switchTo('register'));
+document.getElementById('goRegister').addEventListener('click', ()=> switchTo('register'));
+document.getElementById('goLogin').addEventListener('click', ()=> switchTo('login'));
+
+/* ---------- Password visibility toggle ---------- */
+document.querySelectorAll('.toggle-eye').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.toggle);
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+/* ---------- Envío del formulario ----------
+   No se intercepta el submit: el formulario se envía de forma
+   nativa por POST a la ruta de Flask (auth.login). Solo se anima
+   el botón y la barra de carga como retroalimentación visual. */
+document.getElementById('loginForm').addEventListener('submit', (e)=>{
+  const btn = e.target.querySelector('.btn-submit');
+  anime({ targets:btn, scale:[1,0.97,1], duration:220, easing:'easeOutQuad' });
+  const bar = document.getElementById('loadingBar');
+  anime.remove(bar);
+  bar.style.opacity = 1;
+  bar.style.width = '0%';
+  anime({ targets:bar, width:['0%','80%'], duration:400, easing:'easeOutQuad' });
+});
+
+/* ---------- Initial reveal ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  anime({ targets:'.brand-mark, .brand-name', opacity:[0,1], translateY:[10,0], delay: anime.stagger(90), duration:520, easing:'easeOutCubic' });
+  anime({ targets:'.tabs, .kicker, .form-title, .form-sub, #view-login .field, #view-login .row-between, #view-login .btn-submit, #view-login .switch-note', opacity:[0,1], translateY:[8,0], delay: anime.stagger(45, {start:150}), duration:420, easing:'easeOutCubic' });
+});
+</script>
 {% endblock %}

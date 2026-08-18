@@ -1,0 +1,91 @@
+/* ============================================================
+   HOSPITAL ARTORIA — PANTALLA DE ACCESO (login.html)
+   Convierte el bloque .auth-wrap en una experiencia a pantalla
+   completa, incluso aunque siga renderizado dentro del layout
+   con sidebar de base.html. No se modifica ningún template:
+   esto se resuelve únicamente con CSS (:has).
+   ============================================================ */
+
+body:has(.auth-wrap) .app{ display:block; }
+body:has(.auth-wrap) .sidebar{ display:none; }
+body:has(.auth-wrap) .container{ padding:0; margin:0; max-width:none; }
+body:has(.auth-wrap){ overflow:hidden; }
+
+.auth-wrap{ display:grid; grid-template-columns:44% 56%; height:100vh; width:100%; }
+
+/* ================= BRAND PANEL ================= */
+.brand-panel{
+  background:var(--teal); color:#fff;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:52px 56px; position:relative; overflow:hidden;
+}
+.brand-panel .grid-deco{
+  position:absolute; inset:0; opacity:0.10; pointer-events:none;
+  background-image:
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size:38px 38px;
+  mask-image:radial-gradient(circle at 30% 30%, rgba(0,0,0,0.9), transparent 65%);
+}
+.brand-panel .brand-top{ display:flex; flex-direction:column; align-items:center; gap:16px; position:relative; z-index:1; }
+.brand-panel .brand-mark{
+  width:64px;height:64px; border-radius:16px; background:rgba(255,255,255,0.16);
+  display:flex;align-items:center;justify-content:center; flex-shrink:0;
+  border:1px solid rgba(255,255,255,0.3);
+}
+.brand-panel .brand-mark svg{width:32px;height:32px;stroke:#fff;}
+.brand-panel .brand-name{ font-weight:800; font-size:22px; letter-spacing:-0.01em; text-align:center; color:#fff; }
+.brand-panel .brand-name span{ display:block; font-family:'IBM Plex Mono', monospace; font-weight:500; font-size:10.5px; letter-spacing:0.09em; text-transform:uppercase; opacity:0.75; margin-top:6px; }
+
+/* ================= FORM PANEL ================= */
+.form-panel{ background:var(--panel); display:flex; align-items:center; justify-content:center; padding:40px; overflow-y:auto; height:100vh; }
+.form-shell{ width:100%; max-width:380px; }
+
+.tabs{ display:flex; padding:4px; background:var(--teal-softer); border:1px solid var(--line); border-radius:12px; margin-bottom:28px; position:relative; }
+.tab-btn{ flex:1; text-align:center; padding:9px 0; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--ink-soft); border:none; background:transparent; position:relative; z-index:1; }
+.tab-btn.active{ color:#fff; }
+.tab-highlight{ position:absolute; top:4px; left:4px; height:calc(100% - 8px); width:calc(50% - 4px); background:var(--teal); border-radius:9px; z-index:0; }
+
+.kicker{ font-size:10.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-dark); margin-bottom:6px; }
+.form-title{ font-size:22px; font-weight:800; letter-spacing:-0.015em; margin:0 0 6px 0; color:var(--ink); }
+.form-sub{ font-size:12.5px; color:var(--ink-faint); font-weight:500; margin:0 0 26px 0; }
+
+.form-view{ display:none; }
+.form-view.active{ display:block; }
+
+.field{ display:flex; flex-direction:column; gap:6px; margin-bottom:15px; }
+.field label{ font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+.input-wrap{ display:flex; align-items:center; gap:9px; border:1px solid var(--line); border-radius:10px; padding:11px 13px; background:var(--panel); }
+.input-wrap:focus-within{ border-color:var(--teal); }
+.input-wrap svg{width:15px;height:15px; color:var(--ink-faint); flex-shrink:0;}
+.input-wrap input, .input-wrap select{ border:none; outline:none; background:transparent; font-size:13px; color:var(--ink); width:100%; padding:0; }
+.input-wrap select{appearance:none; cursor:pointer;}
+.toggle-eye{ background:none; border:none; padding:0; display:flex; color:var(--ink-faint); }
+.toggle-eye svg{width:15px;height:15px;}
+
+.row-between{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; font-size:12px; }
+.check-wrap{ display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-weight:600; }
+.check-wrap input{ width:15px;height:15px; accent-color:var(--teal); }
+.link-teal{ color:var(--teal-dark); font-weight:700; }
+
+.btn-submit{
+  width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px; border-radius:10px; border:1px solid var(--teal); background:var(--teal);
+  color:#fff; font-size:13px; font-weight:700;
+}
+.btn-submit:hover{ background:var(--teal-dark); border-color:var(--teal-dark); }
+.btn-submit svg{width:15px;height:15px;}
+
+.switch-note{ text-align:center; font-size:12.5px; color:var(--ink-faint); font-weight:500; margin-top:22px; }
+
+.terms-row{ display:flex; align-items:flex-start; gap:8px; margin-bottom:22px; font-size:11.5px; color:var(--ink-soft); font-weight:500; line-height:1.5; }
+.terms-row input{ width:15px;height:15px; accent-color:var(--teal); margin-top:1px; flex-shrink:0; }
+
+.hint{ font-size:10.5px; color:var(--ink-faint); font-weight:600; margin-top:5px; }
+
+@media (max-width: 920px){
+  .auth-wrap{ grid-template-columns:1fr; height:auto; min-height:100vh; }
+  .brand-panel{ display:none; }
+  body:has(.auth-wrap){ overflow-y:auto; }
+  .form-panel{ height:auto; min-height:100vh; }
+}

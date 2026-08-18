@@ -1,34 +1,272 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Gestión de Pacientes</h2>
-<div id="pacientes-list"></div>
-<script>
-    fetch('/pacientes/api')
-        .then(r => r.json())
-        .then(data => {
-            let html = '<ul>';
-            data.forEach(p => {
-                html += `<li>${p.nombre} ${p.apellidos} - ${p.email}</li>`;
-            });
-            html += '</ul>';
-            document.getElementById('pacientes-list').innerHTML = html;
-        });
-</script>
-<button id="btn-nuevo-pacientes">Nuevo Paciente</button>
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+    <h2 style="margin:0;">Gestión de Pacientes</h2>
+    <button id="btn-nuevo-paciente" class="btn btn-success">+ Nuevo paciente</button>
+</div>
+
 <div id="pacientes-list"></div>
 
-<!-- Modal -->
-<div id="pacientes-modal" class="modal">
-    <div class="modal-content">
-        <span class="modal-close">&times;</span>
-        <h2 class="modal-title">Nuevo Paciente</h2>
-        <form id="pacientes-form">
-            <input name="nombre" placeholder="Nombre">
-            <input name="apellidos" placeholder="Apellidos">
-            <input name="email" placeholder="Email">
-            <!-- más campos -->
+<!-- ============================================================ -->
+<!-- MODAL para crear/editar paciente -->
+<!-- ============================================================ -->
+<div id="modal-paciente" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; overflow-y:auto;">
+    <div style="background:white; border-radius:12px; padding:30px; max-width:600px; width:90%; margin:20px auto; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+        <h3 id="modal-titulo-paciente" style="margin-top:0; color:#1a3e60;">Nuevo Paciente</h3>
+        <form id="form-paciente">
+            <input type="hidden" name="_id" id="paciente-id">
+            
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Nombre</label>
+                <input type="text" name="nombre" id="paciente-nombre" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Apellidos</label>
+                <input type="text" name="apellidos" id="paciente-apellidos" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Fecha de nacimiento</label>
+                <input type="date" name="fecha_nacimiento" id="paciente-fecha_nacimiento" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Género</label>
+                <select name="genero" id="paciente-genero" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Teléfono</label>
+                <input type="text" name="telefono" id="paciente-telefono" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Email</label>
+                <input type="email" name="email" id="paciente-email" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Dirección</label>
+                <input type="text" name="direccion" id="paciente-direccion" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Tipo de sangre</label>
+                <select name="tipo_sangre" id="paciente-tipo_sangre" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar...</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Alergias</label>
+                <input type="text" name="alergias" id="paciente-alergias" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Antecedentes</label>
+                <textarea name="antecedentes" id="paciente-antecedentes" rows="2" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></textarea>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit" id="btn-guardar-paciente" class="btn btn-primary" style="flex:1;">Guardar</button>
+                <button type="button" id="btn-cancelar-paciente" class="btn btn-danger" style="flex:0;">Cancelar</button>
+            </div>
         </form>
-        <button id="btn-guardar-pacientes">Guardar</button>
     </div>
 </div>
+
+<script>
+    // ============================================================
+    // 1. Cargar listado de pacientes
+    // ============================================================
+    function cargarPacientes() {
+        fetch('/pacientes/api')
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    document.getElementById('pacientes-list').innerHTML = '<p style="color:#999;">No hay pacientes registrados.</p>';
+                    return;
+                }
+                let html = `
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#1a3e60; color:white;">
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Nombre</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Email</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Teléfono</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Tipo sangre</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                data.forEach(p => {
+                    html += `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:10px;">${p.nombre} ${p.apellidos}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${p.email || ''}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${p.telefono || ''}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${p.tipo_sangre || ''}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">
+                                <button onclick="editarPaciente('${p._id}')" class="btn-accion" style="background:#ffc107; color:#333;">Editar</button>
+                                <button onclick="eliminarPaciente('${p._id}')" class="btn-accion" style="background:#dc3545; color:white;">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+                document.getElementById('pacientes-list').innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error al cargar pacientes:', err);
+                document.getElementById('pacientes-list').innerHTML = '<p style="color:red;">Error al cargar pacientes.</p>';
+            });
+    }
+
+    // ============================================================
+    // 2. Abrir modal
+    // ============================================================
+    function abrirModalPaciente(titulo, datos = null) {
+        document.getElementById('modal-titulo-paciente').textContent = titulo;
+        document.getElementById('modal-paciente').style.display = 'flex';
+        if (datos) {
+            document.getElementById('paciente-id').value = datos._id || '';
+            document.getElementById('paciente-nombre').value = datos.nombre || '';
+            document.getElementById('paciente-apellidos').value = datos.apellidos || '';
+            document.getElementById('paciente-fecha_nacimiento').value = datos.fecha_nacimiento || '';
+            document.getElementById('paciente-genero').value = datos.genero || 'M';
+            document.getElementById('paciente-telefono').value = datos.telefono || '';
+            document.getElementById('paciente-email').value = datos.email || '';
+            document.getElementById('paciente-direccion').value = datos.direccion || '';
+            document.getElementById('paciente-tipo_sangre').value = datos.tipo_sangre || '';
+            document.getElementById('paciente-alergias').value = datos.alergias || '';
+            document.getElementById('paciente-antecedentes').value = datos.antecedentes || '';
+        } else {
+            document.getElementById('form-paciente').reset();
+            document.getElementById('paciente-id').value = '';
+            document.getElementById('paciente-genero').value = 'M';
+        }
+    }
+
+    function cerrarModalPaciente() {
+        document.getElementById('modal-paciente').style.display = 'none';
+    }
+
+    // ============================================================
+    // 3. Guardar (crear o actualizar)
+    // ============================================================
+    document.getElementById('form-paciente').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('paciente-id').value;
+        const url = id ? `/pacientes/api/${id}` : '/pacientes/api';
+        const method = id ? 'PUT' : 'POST';
+
+        const data = {
+            nombre: document.getElementById('paciente-nombre').value.trim(),
+            apellidos: document.getElementById('paciente-apellidos').value.trim(),
+            fecha_nacimiento: document.getElementById('paciente-fecha_nacimiento').value,
+            genero: document.getElementById('paciente-genero').value,
+            telefono: document.getElementById('paciente-telefono').value.trim(),
+            email: document.getElementById('paciente-email').value.trim(),
+            direccion: document.getElementById('paciente-direccion').value.trim(),
+            tipo_sangre: document.getElementById('paciente-tipo_sangre').value,
+            alergias: document.getElementById('paciente-alergias').value.trim() || null,
+            antecedentes: document.getElementById('paciente-antecedentes').value.trim() || null
+        };
+
+        const btn = document.getElementById('btn-guardar-paciente');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar');
+            return r.json();
+        })
+        .then(() => {
+            cerrarModalPaciente();
+            cargarPacientes();
+            alert(id ? 'Paciente actualizado.' : 'Paciente creado.');
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error al guardar el paciente.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Guardar';
+        });
+    });
+
+    // ============================================================
+    // 4. Editar
+    // ============================================================
+    function editarPaciente(id) {
+        fetch(`/pacientes/api/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                abrirModalPaciente('Editar Paciente', data);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('No se pudo cargar el paciente.');
+            });
+    }
+
+    // ============================================================
+    // 5. Eliminar
+    // ============================================================
+    function eliminarPaciente(id) {
+        if (!confirm('¿Eliminar este paciente?')) return;
+        fetch(`/pacientes/api/${id}`, { method: 'DELETE' })
+            .then(r => {
+                if (!r.ok) throw new Error('Error al eliminar');
+                return r.json();
+            })
+            .then(() => {
+                cargarPacientes();
+                alert('Paciente eliminado.');
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error al eliminar el paciente.');
+            });
+    }
+
+    // ============================================================
+    // 6. Eventos
+    // ============================================================
+    document.getElementById('btn-nuevo-paciente').addEventListener('click', function() {
+        abrirModalPaciente('Nuevo Paciente');
+    });
+    document.getElementById('btn-cancelar-paciente').addEventListener('click', cerrarModalPaciente);
+    document.getElementById('modal-paciente').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalPaciente();
+    });
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', cargarPacientes);
+</script>
+
+<style>
+    .btn { display:inline-block; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; text-decoration:none; color:white; font-size:14px; }
+    .btn-success { background:#28a745; }
+    .btn-success:hover { background:#218838; }
+    .btn-primary { background:#1a3e60; }
+    .btn-primary:hover { background:#2a5a7a; }
+    .btn-danger { background:#dc3545; color:white; }
+    .btn-danger:hover { background:#c82333; }
+    .btn-accion { border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; margin-right:4px; }
+    .btn-accion:hover { opacity:0.8; }
+    label { font-weight:600; font-size:14px; }
+    input, select, textarea { font-size:14px; }
+</style>
 {% endblock %}

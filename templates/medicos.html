@@ -1,17 +1,316 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Gestión de Médicos</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+    <h2 style="margin:0;">Gestión de Médicos</h2>
+    <button id="btn-nuevo-medico" class="btn btn-success">+ Nuevo médico</button>
+</div>
+
+<!-- Contenedor para el listado de médicos -->
 <div id="medicos-list"></div>
+
+<!-- ============================================================ -->
+<!-- MODAL para crear/editar médico -->
+<!-- ============================================================ -->
+<div id="modal-medico" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; overflow-y:auto;">
+    <div style="background:white; border-radius:12px; padding:30px; max-width:600px; width:90%; margin:20px auto; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+        <h3 id="modal-titulo" style="margin-top:0; color:#1a3e60;">Nuevo Médico</h3>
+        <form id="form-medico">
+            <input type="hidden" name="_id" id="medico-id">
+            
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Nombre</label>
+                <input type="text" name="nombre" id="medico-nombre" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Apellidos</label>
+                <input type="text" name="apellidos" id="medico-apellidos" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Cédula profesional</label>
+                <input type="number" name="cedula" id="medico-cedula" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Especialidad</label>
+                <select name="especialidad" id="medico-especialidad" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar...</option>
+                    <option value="Cardiología">Cardiología</option>
+                    <option value="Pediatría">Pediatría</option>
+                    <option value="Medicina Interna">Medicina Interna</option>
+                    <option value="Dermatología">Dermatología</option>
+                    <option value="Neurología">Neurología</option>
+                    <option value="Ginecología">Ginecología</option>
+                    <option value="Ortopedia">Ortopedia</option>
+                    <option value="Oftalmología">Oftalmología</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Teléfono</label>
+                <input type="text" name="telefono" id="medico-telefono" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Email</label>
+                <input type="email" name="email" id="medico-email" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Estado</label>
+                <select name="estado" id="medico-estado" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Horarios (ej: {"lunes":"9-14", "miércoles":"9-14"})</label>
+                <textarea name="horarios" id="medico-horarios" rows="2" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-family:monospace;">{"lunes": "9-14", "miércoles": "9-14"}</textarea>
+                <small style="color:#666;">Formato JSON con días y horas</small>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit" id="btn-guardar-medico" class="btn btn-primary" style="flex:1;">Guardar</button>
+                <button type="button" id="btn-cancelar-medico" class="btn btn-danger" style="flex:0;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
 <script>
-    fetch('/medicos/api')
-        .then(r => r.json())
-        .then(data => {
-            let html = '<ul>';
-            data.forEach(m => {
-                html += `<li>${m.nombre} ${m.apellidos} - ${m.especialidad}</li>`;
+    // ============================================================
+    // 1. Cargar listado de médicos
+    // ============================================================
+    function cargarMedicos() {
+        fetch('/medicos/api')
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    document.getElementById('medicos-list').innerHTML = '<p style="color:#999;">No hay médicos registrados.</p>';
+                    return;
+                }
+                let html = `
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#1a3e60; color:white;">
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Nombre</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Cédula</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Especialidad</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Estado</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                data.forEach(m => {
+                    html += `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:10px;">${m.nombre} ${m.apellidos}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${m.cedula}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${m.especialidad}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${m.estado}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">
+                                <button onclick="editarMedico('${m._id}')" class="btn-accion" style="background:#ffc107; color:#333;">Editar</button>
+                                <button onclick="eliminarMedico('${m._id}')" class="btn-accion" style="background:#dc3545; color:white;">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+                document.getElementById('medicos-list').innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error al cargar médicos:', err);
+                document.getElementById('medicos-list').innerHTML = '<p style="color:red;">Error al cargar médicos.</p>';
             });
-            html += '</ul>';
-            document.getElementById('medicos-list').innerHTML = html;
+    }
+
+    // ============================================================
+    // 2. Abrir modal para nuevo médico
+    // ============================================================
+    function abrirModal(titulo, datos = null) {
+        document.getElementById('modal-titulo').textContent = titulo;
+        document.getElementById('modal-medico').style.display = 'flex';
+        if (datos) {
+            document.getElementById('medico-id').value = datos._id || '';
+            document.getElementById('medico-nombre').value = datos.nombre || '';
+            document.getElementById('medico-apellidos').value = datos.apellidos || '';
+            document.getElementById('medico-cedula').value = datos.cedula || '';
+            document.getElementById('medico-especialidad').value = datos.especialidad || '';
+            document.getElementById('medico-telefono').value = datos.telefono || '';
+            document.getElementById('medico-email').value = datos.email || '';
+            document.getElementById('medico-estado').value = datos.estado || 'Activo';
+            document.getElementById('medico-horarios').value = JSON.stringify(datos.horarios || {});
+        } else {
+            document.getElementById('form-medico').reset();
+            document.getElementById('medico-id').value = '';
+            document.getElementById('medico-estado').value = 'Activo';
+            document.getElementById('medico-horarios').value = '{"lunes": "9-14", "miércoles": "9-14"}';
+        }
+    }
+
+    function cerrarModal() {
+        document.getElementById('modal-medico').style.display = 'none';
+    }
+
+    // ============================================================
+    // 3. Guardar (crear o actualizar)
+    // ============================================================
+    document.getElementById('form-medico').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('medico-id').value;
+        const url = id ? `/medicos/api/${id}` : '/medicos/api';
+        const method = id ? 'PUT' : 'POST';
+
+        // Recoger datos
+        const data = {
+            nombre: document.getElementById('medico-nombre').value.trim(),
+            apellidos: document.getElementById('medico-apellidos').value.trim(),
+            cedula: parseInt(document.getElementById('medico-cedula').value),
+            especialidad: document.getElementById('medico-especialidad').value,
+            telefono: document.getElementById('medico-telefono').value.trim(),
+            email: document.getElementById('medico-email').value.trim(),
+            estado: document.getElementById('medico-estado').value,
+            horarios: JSON.parse(document.getElementById('medico-horarios').value)
+        };
+
+        // Validar campos requeridos
+        if (!data.nombre || !data.apellidos || !data.cedula || !data.especialidad) {
+            alert('Por favor, completa todos los campos obligatorios.');
+            return;
+        }
+
+        // Deshabilitar botón durante el envío
+        const btn = document.getElementById('btn-guardar-medico');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar');
+            return r.json();
+        })
+        .then(() => {
+            cerrarModal();
+            cargarMedicos();
+            alert(id ? 'Médico actualizado correctamente.' : 'Médico creado correctamente.');
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error al guardar el médico. Revisa la consola.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Guardar';
         });
+    });
+
+    // ============================================================
+    // 4. Editar médico (cargar datos en modal)
+    // ============================================================
+    function editarMedico(id) {
+        fetch(`/medicos/api/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                abrirModal('Editar Médico', data);
+            })
+            .catch(err => {
+                console.error('Error al cargar médico:', err);
+                alert('No se pudo cargar el médico para editar.');
+            });
+    }
+
+    // ============================================================
+    // 5. Eliminar médico
+    // ============================================================
+    function eliminarMedico(id) {
+        if (!confirm('¿Estás seguro de eliminar este médico?')) return;
+        fetch(`/medicos/api/${id}`, { method: 'DELETE' })
+            .then(r => {
+                if (!r.ok) throw new Error('Error al eliminar');
+                return r.json();
+            })
+            .then(() => {
+                cargarMedicos();
+                alert('Médico eliminado.');
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error al eliminar el médico.');
+            });
+    }
+
+    // ============================================================
+    // 6. Eventos de los botones
+    // ============================================================
+    document.getElementById('btn-nuevo-medico').addEventListener('click', function() {
+        abrirModal('Nuevo Médico');
+    });
+
+    document.getElementById('btn-cancelar-medico').addEventListener('click', cerrarModal);
+
+    // Cerrar modal al hacer clic fuera del contenido
+    document.getElementById('modal-medico').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModal();
+    });
+
+    // ============================================================
+    // 7. Inicializar - cargar médicos al cargar la página
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', cargarMedicos);
 </script>
+
+<style>
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+        color: white;
+        font-size: 14px;
+    }
+    .btn-success {
+        background: #28a745;
+    }
+    .btn-success:hover {
+        background: #218838;
+    }
+    .btn-primary {
+        background: #1a3e60;
+    }
+    .btn-primary:hover {
+        background: #2a5a7a;
+    }
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+    .btn-danger:hover {
+        background: #c82333;
+    }
+    .btn-accion {
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        margin-right: 4px;
+    }
+    .btn-accion:hover {
+        opacity: 0.8;
+    }
+    label {
+        font-weight: 600;
+        font-size: 14px;
+    }
+    input, select, textarea {
+        font-size: 14px;
+    }
+</style>
 {% endblock %}

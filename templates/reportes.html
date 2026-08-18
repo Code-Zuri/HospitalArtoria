@@ -1,83 +1,925 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Dashboard de Reportes</h2>
-<div id="indicadores" class="kpi-grid"></div>
-<canvas id="chartConsultas" width="400" height="200"></canvas>
-<canvas id="chartEspecialidades" width="400" height="200"></canvas>
-<canvas id="chartEnfermedades" width="400" height="200"></canvas>
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <div class="dashboard-header-titles">
+            <h2><i class="ri-dashboard-3-line"></i> Panel de Control</h2>
+            <p class="dashboard-subtitle">Resumen general de la actividad hospitalaria en tiempo real</p>
+        </div>
+        <div class="dashboard-actions">
+            <button id="btn-descargar-pdf" class="btn-download btn-primary">
+                <span class="btn-icon"><i class="ri-file-download-line"></i></span><span class="btn-label">Descargar Informe PDF</span>
+            </button>
+            <button id="btn-descargar-odf" class="btn-download btn-secondary">
+                <span class="btn-icon"><i class="ri-download-2-line"></i></span><span class="btn-label">Descargar ODF</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div id="indicadores" class="kpi-grid">
+        <div class="kpi-skeleton"></div>
+        <div class="kpi-skeleton"></div>
+        <div class="kpi-skeleton"></div>
+        <div class="kpi-skeleton"></div>
+        <div class="kpi-skeleton"></div>
+        <div class="kpi-skeleton"></div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="charts-grid">
+
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="ri-line-chart-line"></i> Consultas por mes</h3>
+                <p class="chart-subtitle">Volumen de consultas registradas mes a mes</p>
+            </div>
+            <p class="chart-desc">Permite identificar tendencias estacionales y picos de demanda en la atención médica.</p>
+            <div class="chart-body">
+                <div class="chart-canvas-box"><canvas id="chartConsultas"></canvas></div>
+                <div class="chart-stats" id="statsConsultas"><div class="stats-loading">Cargando…</div></div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="ri-hospital-line"></i> Demanda por especialidad</h3>
+                <p class="chart-subtitle">Distribución de consultas por área médica</p>
+            </div>
+            <p class="chart-desc">Ayuda a detectar qué especialidades concentran mayor demanda de atención.</p>
+            <div class="chart-body">
+                <div class="chart-canvas-box"><canvas id="chartEspecialidades"></canvas></div>
+                <div class="chart-stats" id="statsEspecialidades"><div class="stats-loading">Cargando…</div></div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="ri-heart-pulse-line"></i> Enfermedades más frecuentes</h3>
+                <p class="chart-subtitle">Diagnósticos con mayor incidencia</p>
+            </div>
+            <p class="chart-desc">Clave para orientar campañas de prevención y optimizar el inventario de medicamentos.</p>
+            <div class="chart-body">
+                <div class="chart-canvas-box"><canvas id="chartEnfermedades"></canvas></div>
+                <div class="chart-stats" id="statsEnfermedades"><div class="stats-loading">Cargando…</div></div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="ri-hotel-bed-line"></i> Ocupación hospitalaria</h3>
+                <p class="chart-subtitle">Camas ocupadas frente a disponibles</p>
+            </div>
+            <p class="chart-desc">Un porcentaje de ocupación superior al 80% sugiere ampliar capacidad o gestionar altas.</p>
+            <div class="chart-body">
+                <div class="chart-canvas-box"><canvas id="chartOcupacion"></canvas></div>
+                <div class="chart-stats" id="statsOcupacion"><div class="stats-loading">Cargando…</div></div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="ri-calendar-check-line"></i> Citas por estado</h3>
+                <p class="chart-subtitle">Estado actual de las citas agendadas</p>
+            </div>
+            <p class="chart-desc">Permite evaluar la eficiencia en la gestión de citas y detectar cancelaciones o inasistencias.</p>
+            <div class="chart-body">
+                <div class="chart-canvas-box"><canvas id="chartCitasEstado"></canvas></div>
+                <div class="chart-stats" id="statsCitasEstado"><div class="stats-loading">Cargando…</div></div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="ri-money-dollar-circle-line"></i> Evolución de ingresos</h3>
+                <p class="chart-subtitle">Ingresos totales registrados por mes</p>
+            </div>
+            <p class="chart-desc">Ayuda a prever flujos de caja y a evaluar el impacto de cambios en tarifas o volumen de pacientes.</p>
+            <div class="chart-body">
+                <div class="chart-canvas-box"><canvas id="chartIngresos"></canvas></div>
+                <div class="chart-stats" id="statsIngresos"><div class="stats-loading">Cargando…</div></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Librerías necesarias para el PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-    // Cargar métricas
-    fetch('/reportes/api/metricas')
-        .then(r => r.json())
+(function() {
+    'use strict';
+
+    const PALETA = ['#31A093', '#F2994A', '#EB5757', '#2F80ED', '#9B51E0', '#F2C94C', '#56CCF2', '#27AE60'];
+    const charts = {}; // referencias a instancias Chart.js del panel principal
+
+    // ------------------------------------------------------------------
+    // Utilidades
+    // ------------------------------------------------------------------
+    function formatoNumero(n) {
+        return new Intl.NumberFormat('es-MX').format(n || 0);
+    }
+
+    function formatoMoneda(n) {
+        return '$' + new Intl.NumberFormat('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
+    }
+
+    // Calcula porcentajes respecto al total de la serie
+    function calcularPorcentajes(labels, valores) {
+        const total = valores.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
+        return labels.map((label, i) => ({
+            label,
+            valor: valores[i] || 0,
+            pct: (((Number(valores[i]) || 0) / total) * 100).toFixed(1)
+        }));
+    }
+
+    // Dibuja el panel lateral de porcentajes junto a una gráfica
+    function renderStats(containerId, labels, valores, colores, opts) {
+        opts = opts || {};
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        if (!labels.length) {
+            el.innerHTML = '<div class="stats-loading">Sin datos disponibles</div>';
+            return;
+        }
+        const items = calcularPorcentajes(labels, valores).map((d, i) => ({ ...d, color: colores[i % colores.length] }));
+        items.sort((a, b) => b.valor - a.valor);
+        const fmt = opts.moneda ? formatoMoneda : formatoNumero;
+        el.innerHTML = items.map(d => `
+            <div class="stat-row">
+                <span class="stat-dot" style="background:${d.color}"></span>
+                <span class="stat-label" title="${d.label}">${d.label}</span>
+                <span class="stat-value">${fmt(d.valor)}<b>${d.pct}%</b></span>
+            </div>
+        `).join('');
+    }
+
+    function opcionesBase(tituloEjeX, tituloEjeY, indexAxis) {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 500 },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0F2E29',
+                    padding: 10,
+                    titleFont: { weight: '600' },
+                    cornerRadius: 6
+                }
+            },
+            indexAxis: indexAxis || 'x',
+            scales: {
+                x: { title: { display: !!tituloEjeX, text: tituloEjeX || '', font: { weight: '600' } }, grid: { display: indexAxis === 'y' } },
+                y: { title: { display: !!tituloEjeY, text: tituloEjeY || '', font: { weight: '600' } }, beginAtZero: true, grid: { color: '#EEF2F1' } }
+            }
+        };
+    }
+
+    function opcionesCirculares() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 500 },
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
+                tooltip: {
+                    backgroundColor: '#0F2E29',
+                    padding: 10,
+                    cornerRadius: 6,
+                    callbacks: {
+                        label: (ctx) => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0) || 1;
+                            const pct = ((ctx.raw / total) * 100).toFixed(1);
+                            return ` ${ctx.label}: ${formatoNumero(ctx.raw)} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    function crearGrafica(idCanvas, config) {
+        const el = document.getElementById(idCanvas);
+        if (!el) return null;
+        if (charts[idCanvas]) { charts[idCanvas].destroy(); }
+        const chart = new Chart(el.getContext('2d'), config);
+        charts[idCanvas] = chart;
+        return chart;
+    }
+
+    async function obtenerJSON(url) {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('No se pudo obtener ' + url + ' (HTTP ' + r.status + ')');
+        return r.json();
+    }
+
+    // ------------------------------------------------------------------
+    // 1. Indicadores KPI
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/metricas')
         .then(data => {
             const div = document.getElementById('indicadores');
             div.innerHTML = `
-                <div>Pacientes: ${data.pacientes}</div>
-                <div>Médicos: ${data.medicos}</div>
-                <div>Citas: ${data.citas}</div>
-                <div>Consultas: ${data.consultas}</div>
-                <div>Ingresos: $${data.ingresos}</div>
-                <div>Ocupación: ${data.ocupacion}%</div>
+                <div class="kpi-item"><i class="ri-user-heart-line kpi-icon"></i><span class="kpi-label">Pacientes</span><span class="kpi-value">${formatoNumero(data.pacientes)}</span></div>
+                <div class="kpi-item"><i class="ri-stethoscope-line kpi-icon"></i><span class="kpi-label">Médicos</span><span class="kpi-value">${formatoNumero(data.medicos)}</span></div>
+                <div class="kpi-item"><i class="ri-calendar-check-line kpi-icon"></i><span class="kpi-label">Citas</span><span class="kpi-value">${formatoNumero(data.citas)}</span></div>
+                <div class="kpi-item"><i class="ri-clipboard-line kpi-icon"></i><span class="kpi-label">Consultas</span><span class="kpi-value">${formatoNumero(data.consultas)}</span></div>
+                <div class="kpi-item"><i class="ri-money-dollar-circle-line kpi-icon"></i><span class="kpi-label">Ingresos</span><span class="kpi-value">${formatoMoneda(data.ingresos)}</span></div>
+                <div class="kpi-item"><i class="ri-hotel-bed-line kpi-icon"></i><span class="kpi-label">Ocupación</span><span class="kpi-value">${data.ocupacion || 0}%</span></div>
             `;
+        })
+        .catch(err => {
+            console.error('Error cargando KPIs:', err);
+            document.getElementById('indicadores').innerHTML = '<div class="stats-loading">No se pudieron cargar los indicadores.</div>';
         });
 
-    // Consultas por mes
-    fetch('/reportes/api/consultas-por-mes')
-        .then(r => r.json())
+    // ------------------------------------------------------------------
+    // 2. Consultas por mes (barras)
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/consultas-por-mes')
         .then(data => {
-            const ctx = document.getElementById('chartConsultas').getContext('2d');
-            new Chart(ctx, {
+            const labels = data.map(d => d.mes);
+            const valores = data.map(d => d.cantidad);
+            crearGrafica('chartConsultas', {
                 type: 'bar',
+                data: { labels, datasets: [{ label: 'Consultas', data: valores, backgroundColor: PALETA[0], borderRadius: 6, maxBarThickness: 42 }] },
+                options: opcionesBase('Mes', 'Cantidad de consultas')
+            });
+            renderStats('statsConsultas', labels, valores, labels.map(() => PALETA[0]));
+        })
+        .catch(err => console.error('Error cargando consultas por mes:', err));
+
+    // ------------------------------------------------------------------
+    // 3. Demanda por especialidad (pastel)
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/especialidades-demanda')
+        .then(data => {
+            const labels = data.map(d => d._id || 'Sin especificar');
+            const valores = data.map(d => d.cantidad);
+            const colores = labels.map((_, i) => PALETA[i % PALETA.length]);
+            crearGrafica('chartEspecialidades', {
+                type: 'pie',
+                data: { labels, datasets: [{ data: valores, backgroundColor: colores, borderWidth: 2, borderColor: '#fff' }] },
+                options: opcionesCirculares()
+            });
+            renderStats('statsEspecialidades', labels, valores, colores);
+        })
+        .catch(err => console.error('Error cargando demanda por especialidad:', err));
+
+    // ------------------------------------------------------------------
+    // 4. Enfermedades más frecuentes (barras horizontales)
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/enfermedades-frecuentes')
+        .then(data => {
+            const labels = data.map(d => d._id || 'No especificado');
+            const valores = data.map(d => d.cantidad);
+            crearGrafica('chartEnfermedades', {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Frecuencia', data: valores, backgroundColor: PALETA[2], borderRadius: 6, maxBarThickness: 28 }] },
+                options: opcionesBase('Frecuencia', 'Enfermedad', 'y')
+            });
+            renderStats('statsEnfermedades', labels, valores, labels.map(() => PALETA[2]));
+        })
+        .catch(err => console.error('Error cargando enfermedades:', err));
+
+    // ------------------------------------------------------------------
+    // 5. Ocupación hospitalaria (dona)
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/ocupacion-hospitalaria')
+        .then(data => {
+            const ocupadas = data.ocupadas || 0;
+            const disponibles = Math.max((data.total_camas || 0) - ocupadas, 0);
+            const labels = ['Ocupadas', 'Disponibles'];
+            const valores = [ocupadas, disponibles];
+            const colores = [PALETA[1], PALETA[0]];
+            crearGrafica('chartOcupacion', {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data: valores, backgroundColor: colores, borderWidth: 2, borderColor: '#fff' }] },
+                options: opcionesCirculares()
+            });
+            renderStats('statsOcupacion', labels, valores, colores);
+        })
+        .catch(err => console.error('Error cargando ocupación:', err));
+
+    // ------------------------------------------------------------------
+    // 6. Citas por estado (pastel)
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/citas-por-estado')
+        .then(data => {
+            const labels = data.map(d => d._id || 'Desconocido');
+            const valores = data.map(d => d.cantidad);
+            const colores = labels.map((_, i) => PALETA[i % PALETA.length]);
+            crearGrafica('chartCitasEstado', {
+                type: 'pie',
+                data: { labels, datasets: [{ data: valores, backgroundColor: colores, borderWidth: 2, borderColor: '#fff' }] },
+                options: opcionesCirculares()
+            });
+            renderStats('statsCitasEstado', labels, valores, colores);
+        })
+        .catch(err => console.error('Error cargando citas por estado:', err));
+
+    // ------------------------------------------------------------------
+    // 7. Evolución de ingresos (línea)
+    // ------------------------------------------------------------------
+    obtenerJSON('/reportes/api/ingresos-por-mes')
+        .then(data => {
+            const labels = data.map(d => d.mes);
+            const valores = data.map(d => d.total);
+            crearGrafica('chartIngresos', {
+                type: 'line',
                 data: {
-                    labels: data.map(d => d.mes),
+                    labels,
                     datasets: [{
-                        label: 'Consultas por mes',
-                        data: data.map(d => d.cantidad),
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
+                        label: 'Ingresos',
+                        data: valores,
+                        borderColor: PALETA[0],
+                        backgroundColor: 'rgba(49, 160, 147, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: PALETA[0],
+                        pointRadius: 4
                     }]
                 },
-                options: { responsive: true }
+                options: (() => {
+                    const base = opcionesBase('Mes', 'Ingresos ($)');
+                    base.plugins.tooltip.callbacks = { label: (ctx) => ' ' + formatoMoneda(ctx.raw) };
+                    return base;
+                })()
             });
+            renderStats('statsIngresos', labels, valores, labels.map(() => PALETA[0]), { moneda: true });
+        })
+        .catch(err => console.error('Error cargando ingresos:', err));
+
+    // ------------------------------------------------------------------
+    // 8. Descargar informe PDF
+    //
+    // Estrategia: en lugar de capturar TODO el informe como una sola imagen
+    // gigante y luego cortarla en rebanadas de tamaño fijo (lo que provocaba
+    // que tablas y gráficas quedaran partidas a la mitad entre páginas),
+    // cada elemento del informe (portada, KPIs, cada gráfica, cada bloque de
+    // filas de una tabla) se renderiza y captura POR SEPARADO. Antes de
+    // insertar cada bloque en el PDF se mide su alto real; si no cabe en el
+    // espacio restante de la página actual, se abre una página nueva. Así
+    // ningún bloque queda cortado a media hoja.
+    // ------------------------------------------------------------------
+    const btnPdf = document.getElementById('btn-descargar-pdf');
+    const textoOriginalBtn = btnPdf.innerHTML;
+
+    const PDF_MARGEN = 14;           // margen de página en mm
+    const PDF_ESPACIO_BLOQUE = 6;    // separación vertical entre bloques, en mm
+    const ANCHO_BLOQUE_PX = 900;     // ancho de renderizado de cada bloque, en px
+
+    function esperarAnimacionChart(ctx, config) {
+        return new Promise(resolve => {
+            config.options = config.options || {};
+            const prevOnComplete = (config.options.animation && config.options.animation.onComplete) || null;
+            config.options.animation = Object.assign({}, config.options.animation, {
+                duration: 300,
+                onComplete: function (a) { if (prevOnComplete) prevOnComplete(a); resolve(); }
+            });
+            new Chart(ctx, config);
+        });
+    }
+
+    function tarjetaKpi(colorPunto, etiqueta, valor) {
+        return `
+            <div style="background:#F4FAF9; padding:16px; border-radius:10px; border-left:4px solid #31A093;">
+                <div style="font-weight:600; color:#5B7A75; font-size:12px; text-transform:uppercase; letter-spacing:.03em;">
+                    <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${colorPunto}; margin-right:6px;"></span>${etiqueta}
+                </div>
+                <div style="font-size:22px; font-weight:700; color:#0F2E29; margin-top:4px;">${valor}</div>
+            </div>`;
+    }
+
+    function filaTabla(cols) {
+        return '<tr>' + cols.map(c => `<td style="border:1px solid #E3ECEA; padding:7px 8px; font-size:11.5px;">${c || ''}</td>`).join('') + '</tr>';
+    }
+
+    function encabezadoTabla(cols) {
+        return '<tr>' + cols.map(c => `<th style="background:#31A093; color:#fff; border:1px solid #E3ECEA; padding:8px; text-align:left; font-size:11.5px;">${c}</th>`).join('') + '</tr>';
+    }
+
+    function hexToRgb(hex) {
+        const v = hex.replace('#', '');
+        return [parseInt(v.substring(0, 2), 16), parseInt(v.substring(2, 4), 16), parseInt(v.substring(4, 6), 16)];
+    }
+
+    // Crea un contenedor fuera de pantalla con ancho fijo, usado para capturar cada bloque del informe
+    function crearLienzoOffscreen(anchoPx) {
+        const div = document.createElement('div');
+        div.style.cssText = `
+            position: fixed; top: 0; left: -10000px;
+            width: ${anchoPx}px; background: #fff;
+            padding: 24px; font-family: 'Segoe UI', Arial, sans-serif; color: #1c2b28; box-sizing: border-box;
+        `;
+        document.body.appendChild(div);
+        return div;
+    }
+
+    // Renderiza un bloque HTML fuera de pantalla, lo captura como imagen y lo agrega
+    // al PDF respetando el espacio restante en la página actual, para no cortar
+    // contenido a la mitad. Si un bloque es más alto que una página completa (caso
+    // extremo, p. ej. una tabla muy larga) se corta por altura de página como
+    // último recurso, pero eso ya no ocurre con las tablas porque se paginan por filas.
+    async function agregarBloquePDF(pdf, estado, html, opciones) {
+        opciones = opciones || {};
+        const anchoPx = opciones.anchoPx || ANCHO_BLOQUE_PX;
+        const contenedor = crearLienzoOffscreen(anchoPx);
+        contenedor.innerHTML = html;
+
+        if (opciones.antesDeCapturar) {
+            await opciones.antesDeCapturar(contenedor);
+        }
+        await new Promise(r => setTimeout(r, 60));
+        if (document.fonts && document.fonts.ready) { await document.fonts.ready; }
+
+        const canvas = await html2canvas(contenedor, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+        contenedor.remove();
+
+        const anchoUtilMM = pdf.internal.pageSize.getWidth() - PDF_MARGEN * 2;
+        const altoUtilMM = pdf.internal.pageSize.getHeight() - PDF_MARGEN * 2;
+        const altoImgMM = (canvas.height / canvas.width) * anchoUtilMM;
+
+        // Si el bloque no cabe en el espacio restante de la página actual, se pasa a una nueva
+        if (estado.y + altoImgMM > PDF_MARGEN + altoUtilMM && estado.y > PDF_MARGEN) {
+            pdf.addPage();
+            estado.y = PDF_MARGEN;
+        }
+
+        // Último recurso: bloque más alto que una página completa
+        if (altoImgMM > altoUtilMM) {
+            const pxPorMM = canvas.width / anchoUtilMM;
+            const altoPaginaPx = Math.floor(altoUtilMM * pxPorMM);
+            let recortado = 0;
+            while (recortado < canvas.height) {
+                const altoSegmento = Math.min(altoPaginaPx, canvas.height - recortado);
+                const canvasSeg = document.createElement('canvas');
+                canvasSeg.width = canvas.width;
+                canvasSeg.height = altoSegmento;
+                canvasSeg.getContext('2d').drawImage(canvas, 0, recortado, canvas.width, altoSegmento, 0, 0, canvas.width, altoSegmento);
+                const altoSegMM = (altoSegmento * anchoUtilMM) / canvas.width;
+                if (estado.y > PDF_MARGEN) { pdf.addPage(); estado.y = PDF_MARGEN; }
+                pdf.addImage(canvasSeg.toDataURL('image/jpeg', 0.95), 'JPEG', PDF_MARGEN, estado.y, anchoUtilMM, altoSegMM);
+                estado.y += altoSegMM;
+                recortado += altoSegmento;
+            }
+            estado.y += PDF_ESPACIO_BLOQUE;
+            return;
+        }
+
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', PDF_MARGEN, estado.y, anchoUtilMM, altoImgMM);
+        estado.y += altoImgMM + PDF_ESPACIO_BLOQUE;
+    }
+
+    // Dibuja la portada del informe directamente con jsPDF (texto nítido, sin captura de imagen)
+    function agregarPortada(pdf, metricas, ahora) {
+        const w = pdf.internal.pageSize.getWidth();
+        const h = pdf.internal.pageSize.getHeight();
+
+        pdf.setFillColor(15, 46, 41);
+        pdf.rect(0, 0, w, 72, 'F');
+        pdf.setFillColor(49, 160, 147);
+        pdf.rect(0, 72, w, 4, 'F');
+
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(28);
+        pdf.text('Informe Hospitalario', w / 2, 32, { align: 'center' });
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(13);
+        pdf.text('Resumen general de actividad e indicadores', w / 2, 45, { align: 'center' });
+
+        pdf.setFontSize(11);
+        pdf.text('Generado el ' + ahora.toLocaleString('es-MX'), w / 2, 58, { align: 'center' });
+
+        pdf.setTextColor(15, 46, 41);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(13);
+        pdf.text('Resumen ejecutivo', PDF_MARGEN, 96);
+        pdf.setDrawColor(227, 236, 234);
+        pdf.line(PDF_MARGEN, 100, w - PDF_MARGEN, 100);
+
+        const datos = [
+            ['Pacientes', formatoNumero(metricas.pacientes), '#31A093'],
+            ['Médicos', formatoNumero(metricas.medicos), '#2F80ED'],
+            ['Citas', formatoNumero(metricas.citas), '#F2994A'],
+            ['Consultas', formatoNumero(metricas.consultas), '#9B51E0'],
+            ['Ingresos', formatoMoneda(metricas.ingresos), '#27AE60'],
+            ['Ocupación', (metricas.ocupacion || 0) + '%', '#EB5757']
+        ];
+
+        const colWidth = (w - PDF_MARGEN * 2 - 16) / 3;
+        const rowHeight = 34;
+        const startY = 112;
+
+        datos.forEach((d, i) => {
+            const col = i % 3;
+            const fila = Math.floor(i / 3);
+            const x = PDF_MARGEN + col * (colWidth + 8);
+            const y = startY + fila * (rowHeight + 10);
+
+            pdf.setFillColor(244, 250, 249);
+            pdf.roundedRect(x, y, colWidth, rowHeight, 3, 3, 'F');
+
+            const [r, g, b] = hexToRgb(d[2]);
+            pdf.setFillColor(r, g, b);
+            pdf.rect(x, y, 2.2, rowHeight, 'F');
+
+            pdf.setTextColor(91, 122, 117);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.text(d[0].toUpperCase(), x + 8, y + 12);
+
+            pdf.setTextColor(15, 46, 41);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(16);
+            pdf.text(String(d[1]), x + 8, y + 25);
         });
 
-    // Especialidades demanda
-    fetch('/reportes/api/especialidades-demanda')
-        .then(r => r.json())
-        .then(data => {
-            const ctx = document.getElementById('chartEspecialidades').getContext('2d');
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: data.map(d => d._id),
-                    datasets: [{
-                        label: 'Demanda por especialidad',
-                        data: data.map(d => d.cantidad),
-                        backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0']
-                    }]
-                }
-            });
-        });
+        pdf.setTextColor(154, 174, 169);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.text('Sistema de Gestión Hospitalaria — Informe generado automáticamente', w / 2, h - 14, { align: 'center' });
+    }
 
-    // Enfermedades frecuentes
-    fetch('/reportes/api/enfermedades-frecuentes')
-        .then(r => r.json())
-        .then(data => {
-            const ctx = document.getElementById('chartEnfermedades').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.map(d => d._id),
-                    datasets: [{
-                        label: 'Enfermedades frecuentes',
-                        data: data.map(d => d.cantidad),
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }]
+    // Agrega una tabla paginándola por bloques de filas, repitiendo el encabezado
+    // en cada bloque, de modo que ningún grupo de filas quede partido entre páginas
+    async function agregarTablaPaginada(pdf, estado, titulo, columnas, filas, filasPorBloque) {
+        if (!filas.length) {
+            await agregarBloquePDF(pdf, estado, `
+                <h2 style="font-size:16px; color:#0F2E29; margin:0 0 10px;">${titulo}</h2>
+                <p style="font-size:12px; color:#5B7A75;">No hay registros disponibles.</p>
+            `);
+            return;
+        }
+        let inicio = 0;
+        let primerBloque = true;
+        while (inicio < filas.length) {
+            const trozo = filas.slice(inicio, inicio + filasPorBloque);
+            const encabezadoBloque = primerBloque
+                ? `<h2 style="font-size:16px; color:#0F2E29; margin:0 0 10px;">${titulo}</h2>`
+                : `<h3 style="font-size:12px; color:#5B7A75; margin:0 0 8px;">${titulo} (continuación)</h3>`;
+            await agregarBloquePDF(pdf, estado, `
+                ${encabezadoBloque}
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>${encabezadoTabla(columnas)}</thead>
+                    <tbody>${trozo.map(filaTabla).join('')}</tbody>
+                </table>
+            `);
+            inicio += filasPorBloque;
+            primerBloque = false;
+        }
+    }
+
+    btnPdf.addEventListener('click', async function () {
+        btnPdf.innerHTML = '<span class="btn-spinner"></span><span class="btn-label">Generando…</span>';
+        btnPdf.disabled = true;
+
+        try {
+            const urls = [
+                '/reportes/api/metricas',
+                '/reportes/api/consultas-por-mes',
+                '/reportes/api/especialidades-demanda',
+                '/reportes/api/enfermedades-frecuentes',
+                '/reportes/api/ocupacion-hospitalaria',
+                '/reportes/api/citas-por-estado',
+                '/reportes/api/ingresos-por-mes',
+                '/pacientes/api',
+                '/medicos/api'
+            ];
+            const [metricas, consultasMes, especialidades, enfermedades, ocupacion, citasEstado, ingresos, pacientes, medicos] =
+                await Promise.all(urls.map(obtenerJSON));
+
+            const ahora = new Date();
+            const ocupadas = ocupacion.ocupadas || 0;
+            const disponibles = Math.max((ocupacion.total_camas || 0) - ocupadas, 0);
+            const totalEsp = especialidades.reduce((s, d) => s + d.cantidad, 0) || 1;
+            const totalCitas = citasEstado.reduce((s, d) => s + d.cantidad, 0) || 1;
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            // ---- Portada ----
+            agregarPortada(pdf, metricas, ahora);
+            pdf.addPage();
+
+            const estado = { y: PDF_MARGEN };
+
+            // ---- Resumen de indicadores + interpretación ----
+            await agregarBloquePDF(pdf, estado, `
+                <h2 style="font-size:16px; color:#0F2E29; margin:0 0 10px;">Resumen de indicadores</h2>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+                    ${tarjetaKpi('#31A093', 'Pacientes', formatoNumero(metricas.pacientes))}
+                    ${tarjetaKpi('#2F80ED', 'Médicos', formatoNumero(metricas.medicos))}
+                    ${tarjetaKpi('#F2994A', 'Citas', formatoNumero(metricas.citas))}
+                    ${tarjetaKpi('#9B51E0', 'Consultas', formatoNumero(metricas.consultas))}
+                    ${tarjetaKpi('#27AE60', 'Ingresos', formatoMoneda(metricas.ingresos))}
+                    ${tarjetaKpi('#EB5757', 'Ocupación', (metricas.ocupacion || 0) + '%')}
+                </div>
+                <p style="font-size:12.5px; color:#3A4F4B; background:#F4FAF9; padding:12px; border-radius:8px; margin-top:14px;">
+                    <strong>Interpretación:</strong> El hospital atiende a ${formatoNumero(metricas.pacientes)} pacientes con ${formatoNumero(metricas.medicos)} médicos.
+                    Se registraron ${formatoNumero(metricas.citas)} citas y ${formatoNumero(metricas.consultas)} consultas, con ingresos totales de
+                    ${formatoMoneda(metricas.ingresos)} y una ocupación hospitalaria del ${metricas.ocupacion || 0}%.
+                </p>
+            `);
+
+            // ---- Gráficas: una por bloque, así ninguna queda partida entre páginas ----
+            const graficas = [
+                {
+                    titulo: 'Consultas por mes',
+                    desc: 'Evolución mensual del número de consultas, útil para identificar tendencias estacionales.',
+                    config: { type: 'bar', data: { labels: consultasMes.map(d => d.mes), datasets: [{ label: 'Consultas', data: consultasMes.map(d => d.cantidad), backgroundColor: '#31A093', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Cantidad' } }, x: { title: { display: true, text: 'Mes' } } } } }
+                },
+                {
+                    titulo: 'Demanda por especialidad',
+                    desc: 'Distribución porcentual de consultas según especialidad médica.',
+                    config: { type: 'pie', data: { labels: especialidades.map(d => d._id || 'Sin especificar'), datasets: [{ data: especialidades.map(d => d.cantidad), backgroundColor: PALETA }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${((ctx.raw / totalEsp) * 100).toFixed(1)}%` } } } } }
+                },
+                {
+                    titulo: 'Enfermedades más frecuentes',
+                    desc: 'Diagnósticos con mayor incidencia, clave para campañas de prevención.',
+                    config: { type: 'bar', data: { labels: enfermedades.map(d => d._id || 'No especificado'), datasets: [{ label: 'Frecuencia', data: enfermedades.map(d => d.cantidad), backgroundColor: '#EB5757', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Frecuencia' } }, y: { title: { display: true, text: 'Enfermedad' } } } } }
+                },
+                {
+                    titulo: 'Ocupación hospitalaria',
+                    desc: 'Camas ocupadas frente a disponibles en el periodo actual.',
+                    config: { type: 'doughnut', data: { labels: ['Ocupadas', 'Disponibles'], datasets: [{ data: [ocupadas, disponibles], backgroundColor: ['#F2994A', '#31A093'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } } }
+                },
+                {
+                    titulo: 'Citas por estado',
+                    desc: 'Distribución de citas según su estado, para evaluar la eficiencia de gestión.',
+                    config: { type: 'pie', data: { labels: citasEstado.map(d => d._id || 'Desconocido'), datasets: [{ data: citasEstado.map(d => d.cantidad), backgroundColor: PALETA }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${((ctx.raw / totalCitas) * 100).toFixed(1)}%` } } } } }
+                },
+                {
+                    titulo: 'Evolución de ingresos',
+                    desc: 'Tendencia de ingresos mensuales para prever flujos de caja.',
+                    config: { type: 'line', data: { labels: ingresos.map(d => d.mes), datasets: [{ label: 'Ingresos', data: ingresos.map(d => d.total), borderColor: '#31A093', backgroundColor: 'rgba(49,160,147,0.12)', fill: true, tension: 0.3, pointBackgroundColor: '#31A093' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Ingresos ($)' } }, x: { title: { display: true, text: 'Mes' } } } } }
                 }
-            });
-        });
+            ];
+
+            for (const g of graficas) {
+                await agregarBloquePDF(pdf, estado, `
+                    <div style="text-align:center;">
+                        <h3 style="font-size:15px; color:#0F2E29; margin:0 0 10px;">${g.titulo}</h3>
+                        <div style="max-width:100%; height:260px;"><canvas id="canvasBloque"></canvas></div>
+                        <p style="font-size:12px; color:#5B7A75; text-align:left; margin:10px 0 0;"><strong>Descripción:</strong> ${g.desc}</p>
+                    </div>
+                `, {
+                    antesDeCapturar: async (contenedor) => {
+                        const ctx = contenedor.querySelector('#canvasBloque').getContext('2d');
+                        await esperarAnimacionChart(ctx, g.config);
+                    }
+                });
+            }
+
+            // ---- Listado de pacientes y médicos, paginados por filas ----
+            const columnasPacientes = ['Nombre', 'Apellidos', 'Email', 'Teléfono', 'Tipo Sangre'];
+            const filasPacientes = pacientes.slice(0, 100).map(p => [p.nombre, p.apellidos, p.email, p.telefono, p.tipo_sangre]);
+            await agregarTablaPaginada(pdf, estado, 'Listado de pacientes (primeros 100)', columnasPacientes, filasPacientes, 20);
+
+            const columnasMedicos = ['Nombre', 'Apellidos', 'Especialidad', 'Teléfono', 'Email', 'Estado'];
+            const filasMedicos = medicos.slice(0, 50).map(m => [m.nombre, m.apellidos, m.especialidad, m.telefono, m.email, m.estado]);
+            await agregarTablaPaginada(pdf, estado, 'Listado de médicos', columnasMedicos, filasMedicos, 20);
+
+            // ---- Pie de página en todas las páginas de contenido (todas menos la portada) ----
+            const totalPaginas = pdf.internal.getNumberOfPages();
+            for (let i = 2; i <= totalPaginas; i++) {
+                pdf.setPage(i);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8.5);
+                pdf.setTextColor(154, 174, 169);
+                pdf.text(`Página ${i - 1} de ${totalPaginas - 1}`, pdf.internal.pageSize.getWidth() - PDF_MARGEN, pdf.internal.pageSize.getHeight() - 8, { align: 'right' });
+                pdf.text('Sistema de Gestión Hospitalaria', PDF_MARGEN, pdf.internal.pageSize.getHeight() - 8);
+            }
+
+            pdf.save(`Informe_Hospital_${ahora.toISOString().slice(0, 10)}.pdf`);
+
+        } catch (err) {
+            console.error('Error al generar el informe PDF:', err);
+            alert('No se pudo generar el informe en PDF. Por favor, inténtalo nuevamente.\nDetalle: ' + err.message);
+        } finally {
+            btnPdf.innerHTML = textoOriginalBtn;
+            btnPdf.disabled = false;
+        }
+    });
+
+    // Botón ODF
+    document.getElementById('btn-descargar-odf').addEventListener('click', function () {
+        window.location.href = '/reportes/api/informe';
+    });
+
+})();
 </script>
+
+<style>
+    :root {
+        --primario: #31A093;
+        --primario-oscuro: #23786D;
+        --primario-claro: #E7F5F3;
+        --texto-fuerte: #0F2E29;
+        --texto-suave: #5B7A75;
+        --borde: #E3ECEA;
+        --fondo-tarjeta: #FFFFFF;
+        --sombra: 0 4px 14px rgba(15, 46, 41, 0.07);
+        --sombra-hover: 0 8px 22px rgba(15, 46, 41, 0.12);
+        --radio: 14px;
+    }
+
+    .dashboard-container {
+        padding: 24px 28px 60px;
+        max-width: 1440px;
+        margin: 0 auto;
+    }
+
+    /* ---------- Encabezado ---------- */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--borde);
+    }
+    .dashboard-header-titles h2 {
+        margin: 0;
+        color: var(--texto-fuerte);
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .dashboard-header-titles h2 i { color: var(--primario); font-size: 24px; }
+    .dashboard-subtitle {
+        margin: 6px 0 0;
+        color: var(--texto-suave);
+        font-size: 14px;
+    }
+    .dashboard-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .btn-download {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        padding: 11px 20px;
+        border-radius: 10px;
+        font-size: 14.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+    }
+    .btn-download:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    .btn-icon { display: inline-flex; align-items: center; font-size: 16px; }
+    .btn-primary { background: var(--primario); color: #fff; box-shadow: 0 4px 10px rgba(49,160,147,0.28); }
+    .btn-primary:hover:not(:disabled) { background: var(--primario-oscuro); transform: translateY(-1px); }
+    .btn-secondary { background: #F1F4F3; color: var(--texto-fuerte); }
+    .btn-secondary:hover { background: #E4E9E8; transform: translateY(-1px); }
+    .btn-spinner {
+        width: 14px; height: 14px;
+        border: 2px solid rgba(255,255,255,0.5);
+        border-top-color: #fff;
+        border-radius: 50%;
+        display: inline-block;
+        animation: girar 0.8s linear infinite;
+    }
+    @keyframes girar { to { transform: rotate(360deg); } }
+
+    /* ---------- KPIs ---------- */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 18px;
+        margin-bottom: 42px;
+    }
+    .kpi-item {
+        background: var(--fondo-tarjeta);
+        border-radius: var(--radio);
+        padding: 20px 18px;
+        box-shadow: var(--sombra);
+        border-top: 3px solid var(--primario);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .kpi-item:hover { transform: translateY(-3px); box-shadow: var(--sombra-hover); }
+    .kpi-icon { font-size: 22px; color: var(--primario); }
+    .kpi-label { font-size: 13px; color: var(--texto-suave); font-weight: 600; }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--texto-fuerte); }
+    .kpi-skeleton {
+        height: 96px;
+        border-radius: var(--radio);
+        background: linear-gradient(90deg, #F1F5F4 25%, #E7EDEC 37%, #F1F5F4 63%);
+        background-size: 400% 100%;
+        animation: brillo 1.3s ease infinite;
+    }
+    @keyframes brillo { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+    /* ---------- Gráficas ---------- */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+    .chart-card {
+        background: var(--fondo-tarjeta);
+        border-radius: var(--radio);
+        padding: 22px;
+        box-shadow: var(--sombra);
+    }
+    .chart-card-head h3 {
+        margin: 0;
+        font-size: 17px;
+        color: var(--texto-fuerte);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .chart-card-head h3 i { color: var(--primario); font-size: 18px; }
+    .chart-subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--texto-suave);
+    }
+    .chart-desc {
+        font-size: 12.5px;
+        color: var(--texto-suave);
+        margin: 10px 0 6px;
+        line-height: 1.5;
+        border-left: 3px solid var(--primario-claro);
+        padding-left: 10px;
+    }
+    .chart-body {
+        display: flex;
+        gap: 18px;
+        align-items: stretch;
+        margin-top: 10px;
+    }
+    .chart-canvas-box {
+        flex: 1 1 0;
+        min-width: 0;
+        height: 240px;
+        position: relative;
+    }
+    .chart-stats {
+        width: 190px;
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 240px;
+        overflow-y: auto;
+        padding-left: 14px;
+        border-left: 1px solid var(--borde);
+    }
+    .stat-row {
+        display: grid;
+        grid-template-columns: 8px 1fr auto;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+    }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .stat-label {
+        color: var(--texto-fuerte);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .stat-value {
+        color: var(--texto-suave);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .stat-value b { color: var(--primario-oscuro); font-weight: 700; margin-left: 4px; }
+    .stats-loading { font-size: 12px; color: var(--texto-suave); }
+
+    @media (max-width: 1100px) {
+        .charts-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+        .dashboard-container { padding: 18px 16px 40px; }
+        .kpi-grid { grid-template-columns: 1fr 1fr; }
+        .dashboard-header { flex-direction: column; align-items: stretch; }
+        .btn-download { width: 100%; justify-content: center; }
+        .chart-body { flex-direction: column; }
+        .chart-stats { width: 100%; max-height: none; border-left: none; border-top: 1px solid var(--borde); padding-left: 0; padding-top: 10px; }
+    }
+</style>
 {% endblock %}

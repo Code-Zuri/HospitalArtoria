@@ -1,17 +1,347 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Gestión de Diagnósticos</h2>
-<div id="diagnosticos-list"></div>
+
+<!-- ============================================================ -->
+<!-- Variable global de permisos (evaluada en el servidor) -->
+<!-- ============================================================ -->
 <script>
-    fetch('/diagnosticos/api')
-        .then(r => r.json())
-        .then(data => {
-            let html = '<ul>';
-            data.forEach(d => {
-                html += `<li>${d.enfermedad} - ${d.codigo} - ${d.fecha}</li>`;
-            });
-            html += '</ul>';
-            document.getElementById('diagnosticos-list').innerHTML = html;
-        });
+    // Obtener el rol de forma segura (si no existe, cadena vacía)
+    let rol = {{ session.get('rol')|tojson }};
+    if (!rol) rol = '';
+    window.puedeModificar = (rol === 'admin' || rol === 'medico');
+    console.log('🔍 Rol del usuario:', rol);
+    console.log('🔑 Permiso para modificar diagnósticos:', window.puedeModificar);
 </script>
+
+<!-- ============================================================ -->
+<!-- Encabezado y botón "Nuevo diagnóstico" -->
+<!-- ============================================================ -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+    <h2 style="margin:0;">Gestión de Diagnósticos</h2>
+    {% if session.get('rol') in ['admin', 'medico'] %}
+        <button id="btn-nuevo-diagnostico" class="btn btn-success">+ Nuevo diagnóstico</button>
+    {% else %}
+        <span style="font-size:14px; color:#999;">(Solo administradores y médicos pueden modificar)</span>
+    {% endif %}
+</div>
+
+<!-- ============================================================ -->
+<!-- Contenedor del listado -->
+<!-- ============================================================ -->
+<div id="diagnosticos-list"></div>
+
+<!-- ============================================================ -->
+<!-- MODAL para crear/editar diagnóstico -->
+<!-- ============================================================ -->
+<div id="modal-diagnostico" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; overflow-y:auto;">
+    <div style="background:white; border-radius:12px; padding:30px; max-width:600px; width:90%; margin:20px auto; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+        <h3 id="modal-titulo-diagnostico" style="margin-top:0; color:#1a3e60;">Nuevo Diagnóstico</h3>
+        <form id="form-diagnostico">
+            <input type="hidden" name="_id" id="diagnostico-id">
+            
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Paciente</label>
+                <select name="paciente_id" id="diagnostico-paciente_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar paciente...</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Médico</label>
+                <select name="medico_id" id="diagnostico-medico_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar médico...</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Enfermedad</label>
+                <input type="text" name="enfermedad" id="diagnostico-enfermedad" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Código</label>
+                <input type="text" name="codigo" id="diagnostico-codigo" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Descripción</label>
+                <textarea name="descripcion" id="diagnostico-descripcion" rows="2" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></textarea>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Fecha</label>
+                <input type="datetime-local" name="fecha" id="diagnostico-fecha" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Consulta asociada (opcional)</label>
+                <select name="consulta_id" id="diagnostico-consulta_id" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Ninguna</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit" id="btn-guardar-diagnostico" class="btn btn-primary" style="flex:1;">Guardar</button>
+                <button type="button" id="btn-cancelar-diagnostico" class="btn btn-danger" style="flex:0;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================================ -->
+<script>
+    // ============================================================
+    // 0. Variables globales
+    // ============================================================
+    let pacientesList = [];
+    let medicosList = [];
+    let consultasList = [];
+
+    // ============================================================
+    // 1. Cargar selects (pacientes, médicos, consultas)
+    // ============================================================
+    function cargarSelects() {
+        return Promise.all([
+            fetch('/pacientes/api').then(r => r.json()),
+            fetch('/medicos/api').then(r => r.json()),
+            fetch('/consultas/api').then(r => r.json())
+        ]).then(([pacientes, medicos, consultas]) => {
+            pacientesList = pacientes;
+            medicosList = medicos;
+            consultasList = consultas;
+
+            // Llenar select de pacientes
+            const selPac = document.getElementById('diagnostico-paciente_id');
+            selPac.innerHTML = '<option value="">Seleccionar paciente...</option>';
+            pacientes.forEach(p => {
+                selPac.innerHTML += `<option value="${p._id}">${p.nombre} ${p.apellidos}</option>`;
+            });
+
+            // Llenar select de médicos
+            const selMed = document.getElementById('diagnostico-medico_id');
+            selMed.innerHTML = '<option value="">Seleccionar médico...</option>';
+            medicos.forEach(m => {
+                selMed.innerHTML += `<option value="${m._id}">${m.nombre} ${m.apellidos} - ${m.especialidad}</option>`;
+            });
+
+            // Llenar select de consultas (opcional)
+            const selCons = document.getElementById('diagnostico-consulta_id');
+            selCons.innerHTML = '<option value="">Ninguna</option>';
+            consultas.forEach(c => {
+                const fecha = new Date(c.fecha).toLocaleString();
+                selCons.innerHTML += `<option value="${c._id}">${c.motivo} - ${fecha}</option>`;
+            });
+        });
+    }
+
+    // ============================================================
+    // 2. Cargar listado de diagnósticos
+    // ============================================================
+    function cargarDiagnosticos() {
+        fetch('/diagnosticos/api')
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    document.getElementById('diagnosticos-list').innerHTML = '<p style="color:#999;">No hay diagnósticos registrados.</p>';
+                    return;
+                }
+
+                let html = `
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#1a3e60; color:white;">
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Paciente</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Enfermedad</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Código</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Fecha</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach(d => {
+                    const paciente = pacientesList.find(p => p._id === d.paciente_id);
+                    const nomPac = paciente ? `${paciente.nombre} ${paciente.apellidos}` : 'Desconocido';
+                    const fecha = new Date(d.fecha).toLocaleString();
+
+                    // Leer el permiso desde la variable global definida al inicio
+                    const puedeModificar = window.puedeModificar || false;
+
+                    html += `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:10px;">${nomPac}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${d.enfermedad || ''}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${d.codigo || ''}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${fecha}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">
+                                ${puedeModificar ? `
+                                    <button onclick="editarDiagnostico('${d._id}')" class="btn-accion" style="background:#ffc107; color:#333;">Editar</button>
+                                    <button onclick="eliminarDiagnostico('${d._id}')" class="btn-accion" style="background:#dc3545; color:white;">Eliminar</button>
+                                ` : `
+                                    <span style="color:#999; font-size:12px;">Sin permiso</span>
+                                `}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                document.getElementById('diagnosticos-list').innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error al cargar diagnósticos:', err);
+                document.getElementById('diagnosticos-list').innerHTML = '<p style="color:red;">Error al cargar diagnósticos.</p>';
+            });
+    }
+
+    // ============================================================
+    // 3. Abrir modal
+    // ============================================================
+    function abrirModalDiagnostico(titulo, datos = null) {
+        document.getElementById('modal-titulo-diagnostico').textContent = titulo;
+        document.getElementById('modal-diagnostico').style.display = 'flex';
+
+        if (datos) {
+            document.getElementById('diagnostico-id').value = datos._id || '';
+            document.getElementById('diagnostico-paciente_id').value = datos.paciente_id || '';
+            document.getElementById('diagnostico-medico_id').value = datos.medico_id || '';
+            document.getElementById('diagnostico-enfermedad').value = datos.enfermedad || '';
+            document.getElementById('diagnostico-codigo').value = datos.codigo || '';
+            document.getElementById('diagnostico-descripcion').value = datos.descripcion || '';
+            if (datos.fecha) {
+                const fechaObj = new Date(datos.fecha);
+                document.getElementById('diagnostico-fecha').value = fechaObj.toISOString().slice(0, 16);
+            }
+            document.getElementById('diagnostico-consulta_id').value = datos.consulta_id || '';
+        } else {
+            document.getElementById('form-diagnostico').reset();
+            document.getElementById('diagnostico-id').value = '';
+        }
+    }
+
+    function cerrarModalDiagnostico() {
+        document.getElementById('modal-diagnostico').style.display = 'none';
+    }
+
+    // ============================================================
+    // 4. Guardar (crear o actualizar)
+    // ============================================================
+    document.getElementById('form-diagnostico').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('diagnostico-id').value;
+        const url = id ? `/diagnosticos/api/${id}` : '/diagnosticos/api';
+        const method = id ? 'PUT' : 'POST';
+
+        const data = {
+            paciente_id: document.getElementById('diagnostico-paciente_id').value,
+            medico_id: document.getElementById('diagnostico-medico_id').value,
+            enfermedad: document.getElementById('diagnostico-enfermedad').value.trim(),
+            codigo: document.getElementById('diagnostico-codigo').value.trim(),
+            descripcion: document.getElementById('diagnostico-descripcion').value.trim(),
+            fecha: document.getElementById('diagnostico-fecha').value,
+            consulta_id: document.getElementById('diagnostico-consulta_id').value || null
+        };
+
+        const btn = document.getElementById('btn-guardar-diagnostico');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar');
+            return r.json();
+        })
+        .then(() => {
+            cerrarModalDiagnostico();
+            cargarDiagnosticos();
+            alert(id ? 'Diagnóstico actualizado.' : 'Diagnóstico creado.');
+        })
+        .catch(err => {
+            console.error('Error al guardar:', err);
+            alert('Error al guardar el diagnóstico. Revisa la consola.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Guardar';
+        });
+    });
+
+    // ============================================================
+    // 5. Editar
+    // ============================================================
+    function editarDiagnostico(id) {
+        fetch(`/diagnosticos/api/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                abrirModalDiagnostico('Editar Diagnóstico', data);
+            })
+            .catch(err => {
+                console.error('Error al cargar diagnóstico:', err);
+                alert('No se pudo cargar el diagnóstico.');
+            });
+    }
+
+    // ============================================================
+    // 6. Eliminar
+    // ============================================================
+    function eliminarDiagnostico(id) {
+        if (!confirm('¿Eliminar este diagnóstico?')) return;
+
+        fetch(`/diagnosticos/api/${id}`, { method: 'DELETE' })
+            .then(r => {
+                if (!r.ok) throw new Error('Error al eliminar');
+                return r.json();
+            })
+            .then(() => {
+                cargarDiagnosticos();
+                alert('Diagnóstico eliminado.');
+            })
+            .catch(err => {
+                console.error('Error al eliminar:', err);
+                alert('Error al eliminar el diagnóstico.');
+            });
+    }
+
+    // ============================================================
+    // 7. Eventos de UI
+    // ============================================================
+    // Botón "Nuevo diagnóstico" (solo visible si hay permiso)
+    const btnNuevo = document.getElementById('btn-nuevo-diagnostico');
+    if (btnNuevo) {
+        btnNuevo.addEventListener('click', function() {
+            abrirModalDiagnostico('Nuevo Diagnóstico');
+        });
+    }
+
+    document.getElementById('btn-cancelar-diagnostico').addEventListener('click', cerrarModalDiagnostico);
+    document.getElementById('modal-diagnostico').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalDiagnostico();
+    });
+
+    // ============================================================
+    // 8. Inicializar al cargar la página
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarSelects().then(() => {
+            cargarDiagnosticos();
+        });
+    });
+</script>
+
+<style>
+    .btn { display:inline-block; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; text-decoration:none; color:white; font-size:14px; }
+    .btn-success { background:#28a745; }
+    .btn-success:hover { background:#218838; }
+    .btn-primary { background:#1a3e60; }
+    .btn-primary:hover { background:#2a5a7a; }
+    .btn-danger { background:#dc3545; color:white; }
+    .btn-danger:hover { background:#c82333; }
+    .btn-accion { border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; margin-right:4px; }
+    .btn-accion:hover { opacity:0.8; }
+    label { font-weight:600; font-size:14px; }
+    input, select, textarea { font-size:14px; }
+</style>
 {% endblock %}

@@ -8,6 +8,10 @@ from ml.clustering import clusterizar_pacientes
 from decorators import login_required, role_required
 import pandas as pd
 from datetime import timedelta
+from odf import text, teletype, table as odf_table
+from odf.opendocument import OpenDocumentText
+from io import BytesIO
+from flask import send_file
 
 reportes_bp = Blueprint('reportes', __name__)
 
@@ -153,3 +157,135 @@ def api_clustering():
     db = get_db()
     clusters = clusterizar_pacientes(db)
     return jsonify(clusters)
+
+# ============================================================
+# Nuevos endpoints para gráficas adicionales
+# ============================================================
+
+@reportes_bp.route('/api/citas-por-estado')
+@login_required
+@role_required('admin', 'medico', 'recepcionista')
+def citas_por_estado():
+    """Retorna el conteo de citas agrupadas por estado."""
+    db = get_db()
+    pipeline = [
+        {'$group': {'_id': '$estado', 'cantidad': {'$sum': 1}}}
+    ]
+    resultado = list(db.citas.aggregate(pipeline))
+    return jsonify(resultado)
+
+@reportes_bp.route('/api/ingresos-por-mes')
+@login_required
+@role_required('admin', 'medico')
+def ingresos_por_mes():
+    """Retorna los ingresos totales agrupados por mes."""
+    db = get_db()
+    pipeline = [
+        {'$match': {'estado': 'Pagado'}},
+        # Convertir 'fecha' de string a Date
+        {'$addFields': {
+            'fecha_date': {'$toDate': '$fecha'}
+        }},
+        {'$project': {
+            'mes': {'$dateToString': {'format': '%Y-%m', 'date': '$fecha_date'}},
+            'monto': 1
+        }},
+        {'$group': {'_id': '$mes', 'total': {'$sum': '$monto'}}},
+        {'$sort': {'_id': 1}}
+    ]
+    resultado = list(db.pagos.aggregate(pipeline))
+    data = [{'mes': r['_id'], 'total': r['total']} for r in resultado]
+    return jsonify(data)
+
+
+
+@reportes_bp.route('/api/informe')
+@login_required
+@role_required('admin', 'medico', 'recepcionista')
+def descargar_informe():
+    """Genera un informe en formato ODF (.odt) con KPIs, pacientes y médicos."""
+    db = get_db()
+
+    # --- 1. Obtener datos ---
+    metricas = obtener_metricas_basicas(db)
+    pacientes = list(db.pacientes.find().limit(100))
+    medicos = list(db.medicos.find().limit(50))
+
+    # --- 2. Crear documento ODT ---
+    doc = OpenDocumentText()
+
+    # Título principal (outlinelevel=1)
+    h1 = text.H(outlinelevel=1, text="Informe Hospitalario - " + pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"))
+    doc.text.addElement(h1)
+
+    # --- Resumen de KPIs (subtítulo nivel 2) ---
+    h2 = text.H(outlinelevel=2, text="Resumen de Indicadores")
+    doc.text.addElement(h2)
+
+    for key, value in metricas.items():
+        if key in ['pacientes', 'medicos', 'citas', 'consultas', 'camas_ocupadas', 'camas_totales']:
+            doc.text.addElement(text.P(text=f"{key.capitalize()}: {value}"))
+    doc.text.addElement(text.P(text=f"Ingresos totales: ${metricas.get('ingresos', 0):,.2f}"))
+    doc.text.addElement(text.P(text=f"Ocupación: {metricas.get('ocupacion', 0)}%"))
+
+    # --- Tabla de Pacientes (subtítulo nivel 2) ---
+    h_pac = text.H(outlinelevel=2, text="Listado de Pacientes (primeros 100)")
+    doc.text.addElement(h_pac)
+
+    tabla_pacientes = odf_table.Table(name="Pacientes")
+    encabezados = ["Nombre", "Apellidos", "Email", "Teléfono", "Tipo Sangre"]
+    fila_enc = odf_table.TableRow()
+    for enc in encabezados:
+        celda = odf_table.TableCell()
+        celda.addElement(text.P(text=enc))
+        fila_enc.addElement(celda)
+    tabla_pacientes.addElement(fila_enc)
+
+    for p in pacientes:
+        fila = odf_table.TableRow()
+        for campo in ['nombre', 'apellidos', 'email', 'telefono', 'tipo_sangre']:
+            celda = odf_table.TableCell()
+            valor = p.get(campo, '')
+            if valor is None:
+                valor = ''
+            celda.addElement(text.P(text=str(valor)))
+            fila.addElement(celda)
+        tabla_pacientes.addElement(fila)
+    doc.text.addElement(tabla_pacientes)
+
+    # --- Tabla de Médicos (subtítulo nivel 2) ---
+    h_med = text.H(outlinelevel=2, text="Listado de Médicos")
+    doc.text.addElement(h_med)
+
+    tabla_medicos = odf_table.Table(name="Médicos")
+    encabezados_med = ["Nombre", "Apellidos", "Especialidad", "Teléfono", "Email", "Estado"]
+    fila_enc_med = odf_table.TableRow()
+    for enc in encabezados_med:
+        celda = odf_table.TableCell()
+        celda.addElement(text.P(text=enc))
+        fila_enc_med.addElement(celda)
+    tabla_medicos.addElement(fila_enc_med)
+
+    for m in medicos:
+        fila = odf_table.TableRow()
+        for campo in ['nombre', 'apellidos', 'especialidad', 'telefono', 'email', 'estado']:
+            celda = odf_table.TableCell()
+            valor = m.get(campo, '')
+            if valor is None:
+                valor = ''
+            celda.addElement(text.P(text=str(valor)))
+            fila.addElement(celda)
+        tabla_medicos.addElement(fila)
+    doc.text.addElement(tabla_medicos)
+
+    # --- Guardar en memoria y enviar ---
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"Informe_Hospital_{pd.Timestamp.now().strftime('%Y%m%d')}.odt",
+        mimetype='application/vnd.oasis.opendocument.text'
+    )

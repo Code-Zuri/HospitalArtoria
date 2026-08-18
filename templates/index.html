@@ -1,8 +1,170 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h1>Bienvenido a Hospital Artoria</h1>
-<p>Sistema Integral de Gestión y Análisis Hospitalario</p>
-<div class="dashboard-resumen" id="resumen">
-    <!-- Cargado por JS -->
+<div class="dashboard-container">
+
+    {% if session.user_id %}
+        <h1>📊 Panel de Control</h1>
+        <p>Bienvenido, {{ session.username }}. Aquí tienes un resumen de la actividad hospitalaria.</p>
+
+        <!-- Indicadores KPI -->
+        <div id="indicadores" class="kpi-grid"></div>
+
+        <!-- Gráficas -->
+        <div class="charts-row">
+            <div class="chart-box">
+                <h3>📅 Consultas por mes</h3>
+                <canvas id="chartConsultas" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>🏥 Demanda por especialidad</h3>
+                <canvas id="chartEspecialidades" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-box">
+                <h3>🩺 Enfermedades más frecuentes</h3>
+                <canvas id="chartEnfermedades" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-box">
+                <h3>🛏️ Ocupación hospitalaria</h3>
+                <canvas id="chartOcupacion" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+    {% else %}
+        <div class="login-message">
+            <h2>🔐 Acceso restringido</h2>
+            <p>Para ver el panel de control, por favor <a href="{{ url_for('auth.login') }}">inicia sesión</a>.</p>
+        </div>
+    {% endif %}
+
 </div>
+
+<script>
+    // Solo cargar datos si el usuario ha iniciado sesión
+    {% if session.user_id %}
+
+    // 1. Cargar indicadores
+    fetch('/reportes/api/metricas')
+        .then(r => r.json())
+        .then(data => {
+            const div = document.getElementById('indicadores');
+            div.innerHTML = `
+                <div class="kpi-item"><span class="kpi-label">🧑‍⚕️ Pacientes</span><span class="kpi-value">${data.pacientes}</span></div>
+                <div class="kpi-item"><span class="kpi-label">👨‍⚕️ Médicos</span><span class="kpi-value">${data.medicos}</span></div>
+                <div class="kpi-item"><span class="kpi-label">📅 Citas</span><span class="kpi-value">${data.citas}</span></div>
+                <div class="kpi-item"><span class="kpi-label">🩺 Consultas</span><span class="kpi-value">${data.consultas}</span></div>
+                <div class="kpi-item"><span class="kpi-label">💰 Ingresos</span><span class="kpi-value">$${data.ingresos}</span></div>
+                <div class="kpi-item"><span class="kpi-label">🛏️ Ocupación</span><span class="kpi-value">${data.ocupacion}%</span></div>
+            `;
+        })
+        .catch(err => console.error('Error cargando indicadores:', err));
+
+    // 2. Gráfica: Consultas por mes
+    fetch('/reportes/api/consultas-por-mes')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartConsultas').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.mes),
+                    datasets: [{
+                        label: 'Consultas',
+                        data: data.map(d => d.cantidad),
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error cargando consultas por mes:', err));
+
+    // 3. Gráfica: Demanda por especialidad
+    fetch('/reportes/api/especialidades-demanda')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartEspecialidades').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(d => d._id),
+                    datasets: [{
+                        data: data.map(d => d.cantidad),
+                        backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0', '#ff9f40', '#9966ff', '#ff6384']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error cargando demanda por especialidad:', err));
+
+    // 4. Gráfica: Enfermedades más frecuentes
+    fetch('/reportes/api/enfermedades-frecuentes')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartEnfermedades').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d._id),
+                    datasets: [{
+                        label: 'Frecuencia',
+                        data: data.map(d => d.cantidad),
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error cargando enfermedades:', err));
+
+    // 5. Gráfica: Ocupación hospitalaria (pastel)
+    fetch('/reportes/api/ocupacion-hospitalaria')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('chartOcupacion').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ocupadas', 'Disponibles'],
+                    datasets: [{
+                        data: [data.ocupadas, data.total_camas - data.ocupadas],
+                        backgroundColor: ['#ff6384', '#36a2eb']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Error cargando ocupación:', err));
+
+    {% endif %}
+</script>
+
 {% endblock %}

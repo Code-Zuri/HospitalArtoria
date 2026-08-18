@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestión de Diagnósticos</h2>
+<div id="diagnosticos-list"></div>
+<script>
+    fetch('/diagnosticos/api')
+        .then(r => r.json())
+        .then(data => {
+            let html = '<ul>';
+            data.forEach(d => {
+                html += `<li>${d.enfermedad} - ${d.codigo} - ${d.fecha}</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('diagnosticos-list').innerHTML = html;
+        });
+</script>
+{% endblock %}

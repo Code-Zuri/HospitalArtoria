@@ -1,17 +1,300 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Gestión de Consultas Médicas</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+    <h2 style="margin:0;">Gestión de Consultas Médicas</h2>
+    <button id="btn-nuevo-consulta" class="btn btn-success">+ Nueva consulta</button>
+</div>
+
 <div id="consultas-list"></div>
+
+<!-- ============================================================ -->
+<!-- MODAL para crear/editar consulta -->
+<!-- ============================================================ -->
+<div id="modal-consulta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; overflow-y:auto;">
+    <div style="background:white; border-radius:12px; padding:30px; max-width:600px; width:90%; margin:20px auto; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+        <h3 id="modal-titulo-consulta" style="margin-top:0; color:#1a3e60;">Nueva Consulta</h3>
+        <form id="form-consulta">
+            <input type="hidden" name="_id" id="consulta-id">
+            
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Paciente</label>
+                <select name="paciente_id" id="consulta-paciente_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar paciente...</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Médico</label>
+                <select name="medico_id" id="consulta-medico_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar médico...</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Fecha y hora</label>
+                <input type="datetime-local" name="fecha" id="consulta-fecha" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Motivo</label>
+                <input type="text" name="motivo" id="consulta-motivo" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Síntomas</label>
+                <textarea name="sintomas" id="consulta-sintomas" rows="2" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></textarea>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Observaciones</label>
+                <textarea name="observaciones" id="consulta-observaciones" rows="2" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></textarea>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Diagnóstico</label>
+                <input type="text" name="diagnostico" id="consulta-diagnostico" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Tratamiento</label>
+                <input type="text" name="tratamiento" id="consulta-tratamiento" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Costo ($)</label>
+                <input type="number" step="0.01" name="costo" id="consulta-costo" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Especialidad</label>
+                <input type="text" name="especialidad" id="consulta-especialidad" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit" id="btn-guardar-consulta" class="btn btn-primary" style="flex:1;">Guardar</button>
+                <button type="button" id="btn-cancelar-consulta" class="btn btn-danger" style="flex:0;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-    fetch('/consultas/api')
-        .then(r => r.json())
-        .then(data => {
-            let html = '<ul>';
-            data.forEach(c => {
-                html += `<li>${c.motivo} - ${c.fecha} - Costo: $${c.costo || 0}</li>`;
+    let pacientesList = [];
+    let medicosList = [];
+
+    // ============================================================
+    // 0. Cargar selects
+    // ============================================================
+    function cargarSelects() {
+        return Promise.all([
+            fetch('/pacientes/api').then(r => r.json()),
+            fetch('/medicos/api').then(r => r.json())
+        ]).then(([pacientes, medicos]) => {
+            pacientesList = pacientes;
+            medicosList = medicos;
+            const selPac = document.getElementById('consulta-paciente_id');
+            selPac.innerHTML = '<option value="">Seleccionar paciente...</option>';
+            pacientes.forEach(p => {
+                selPac.innerHTML += `<option value="${p._id}">${p.nombre} ${p.apellidos}</option>`;
             });
-            html += '</ul>';
-            document.getElementById('consultas-list').innerHTML = html;
+            const selMed = document.getElementById('consulta-medico_id');
+            selMed.innerHTML = '<option value="">Seleccionar médico...</option>';
+            medicos.forEach(m => {
+                selMed.innerHTML += `<option value="${m._id}">${m.nombre} ${m.apellidos} - ${m.especialidad}</option>`;
+            });
         });
+    }
+
+    // ============================================================
+    // 1. Cargar listado
+    // ============================================================
+    function cargarConsultas() {
+        fetch('/consultas/api')
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    document.getElementById('consultas-list').innerHTML = '<p style="color:#999;">No hay consultas registradas.</p>';
+                    return;
+                }
+                let html = `
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#1a3e60; color:white;">
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Paciente</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Médico</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Fecha</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Costo</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                data.forEach(c => {
+                    const paciente = pacientesList.find(p => p._id === c.paciente_id);
+                    const medico = medicosList.find(m => m._id === c.medico_id);
+                    const nomPac = paciente ? `${paciente.nombre} ${paciente.apellidos}` : 'Desconocido';
+                    const nomMed = medico ? `${medico.nombre} ${medico.apellidos}` : 'Desconocido';
+                    const fecha = new Date(c.fecha).toLocaleString();
+                    html += `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:10px;">${nomPac}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${nomMed}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${fecha}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">$${c.costo || 0}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">
+                                <button onclick="editarConsulta('${c._id}')" class="btn-accion" style="background:#ffc107; color:#333;">Editar</button>
+                                <button onclick="eliminarConsulta('${c._id}')" class="btn-accion" style="background:#dc3545; color:white;">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+                document.getElementById('consultas-list').innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                document.getElementById('consultas-list').innerHTML = '<p style="color:red;">Error al cargar consultas.</p>';
+            });
+    }
+
+    // ============================================================
+    // 2. Modal
+    // ============================================================
+    function abrirModalConsulta(titulo, datos = null) {
+        document.getElementById('modal-titulo-consulta').textContent = titulo;
+        document.getElementById('modal-consulta').style.display = 'flex';
+        if (datos) {
+            document.getElementById('consulta-id').value = datos._id || '';
+            document.getElementById('consulta-paciente_id').value = datos.paciente_id || '';
+            document.getElementById('consulta-medico_id').value = datos.medico_id || '';
+            if (datos.fecha) {
+                const fechaObj = new Date(datos.fecha);
+                document.getElementById('consulta-fecha').value = fechaObj.toISOString().slice(0, 16);
+            }
+            document.getElementById('consulta-motivo').value = datos.motivo || '';
+            document.getElementById('consulta-sintomas').value = datos.sintomas || '';
+            document.getElementById('consulta-observaciones').value = datos.observaciones || '';
+            document.getElementById('consulta-diagnostico').value = datos.diagnostico || '';
+            document.getElementById('consulta-tratamiento').value = datos.tratamiento || '';
+            document.getElementById('consulta-costo').value = datos.costo || '';
+            document.getElementById('consulta-especialidad').value = datos.especialidad || '';
+        } else {
+            document.getElementById('form-consulta').reset();
+            document.getElementById('consulta-id').value = '';
+        }
+    }
+
+    function cerrarModalConsulta() {
+        document.getElementById('modal-consulta').style.display = 'none';
+    }
+
+    // ============================================================
+    // 3. Guardar
+    // ============================================================
+    document.getElementById('form-consulta').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('consulta-id').value;
+        const url = id ? `/consultas/api/${id}` : '/consultas/api';
+        const method = id ? 'PUT' : 'POST';
+
+        const data = {
+            paciente_id: document.getElementById('consulta-paciente_id').value,
+            medico_id: document.getElementById('consulta-medico_id').value,
+            fecha: document.getElementById('consulta-fecha').value,
+            motivo: document.getElementById('consulta-motivo').value.trim(),
+            sintomas: document.getElementById('consulta-sintomas').value.trim(),
+            observaciones: document.getElementById('consulta-observaciones').value.trim(),
+            diagnostico: document.getElementById('consulta-diagnostico').value.trim(),
+            tratamiento: document.getElementById('consulta-tratamiento').value.trim(),
+            costo: parseFloat(document.getElementById('consulta-costo').value) || 0,
+            especialidad: document.getElementById('consulta-especialidad').value.trim()
+        };
+
+        const btn = document.getElementById('btn-guardar-consulta');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar');
+            return r.json();
+        })
+        .then(() => {
+            cerrarModalConsulta();
+            cargarConsultas();
+            alert(id ? 'Consulta actualizada.' : 'Consulta creada.');
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error al guardar la consulta.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Guardar';
+        });
+    });
+
+    // ============================================================
+    // 4. Editar
+    // ============================================================
+    function editarConsulta(id) {
+        fetch(`/consultas/api/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                abrirModalConsulta('Editar Consulta', data);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('No se pudo cargar la consulta.');
+            });
+    }
+
+    // ============================================================
+    // 5. Eliminar
+    // ============================================================
+    function eliminarConsulta(id) {
+        if (!confirm('¿Eliminar esta consulta?')) return;
+        fetch(`/consultas/api/${id}`, { method: 'DELETE' })
+            .then(r => {
+                if (!r.ok) throw new Error('Error al eliminar');
+                return r.json();
+            })
+            .then(() => {
+                cargarConsultas();
+                alert('Consulta eliminada.');
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error al eliminar la consulta.');
+            });
+    }
+
+    // ============================================================
+    // 6. Eventos
+    // ============================================================
+    document.getElementById('btn-nuevo-consulta').addEventListener('click', function() {
+        abrirModalConsulta('Nueva Consulta');
+    });
+    document.getElementById('btn-cancelar-consulta').addEventListener('click', cerrarModalConsulta);
+    document.getElementById('modal-consulta').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalConsulta();
+    });
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarSelects().then(() => {
+            cargarConsultas();
+        });
+    });
 </script>
+
+<style>
+    .btn { display:inline-block; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; text-decoration:none; color:white; font-size:14px; }
+    .btn-success { background:#28a745; }
+    .btn-success:hover { background:#218838; }
+    .btn-primary { background:#1a3e60; }
+    .btn-primary:hover { background:#2a5a7a; }
+    .btn-danger { background:#dc3545; color:white; }
+    .btn-danger:hover { background:#c82333; }
+    .btn-accion { border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; margin-right:4px; }
+    .btn-accion:hover { opacity:0.8; }
+    label { font-weight:600; font-size:14px; }
+    input, select, textarea { font-size:14px; }
+</style>
 {% endblock %}

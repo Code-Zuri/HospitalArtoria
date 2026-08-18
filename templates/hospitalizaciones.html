@@ -1,17 +1,308 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Gestión de Hospitalizaciones</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+    <h2 style="margin:0;">Gestión de Hospitalizaciones</h2>
+    <button id="btn-nuevo-hospitalizacion" class="btn btn-success">+ Nueva hospitalización</button>
+</div>
+
 <div id="hospitalizaciones-list"></div>
+
+<!-- ============================================================ -->
+<!-- MODAL para crear/editar hospitalización -->
+<!-- ============================================================ -->
+<div id="modal-hospitalizacion" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center; overflow-y:auto;">
+    <div style="background:white; border-radius:12px; padding:30px; max-width:600px; width:90%; margin:20px auto; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+        <h3 id="modal-titulo-hospitalizacion" style="margin-top:0; color:#1a3e60;">Nueva Hospitalización</h3>
+        <form id="form-hospitalizacion">
+            <input type="hidden" name="_id" id="hospitalizacion-id">
+            
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Paciente</label>
+                <select name="paciente_id" id="hospitalizacion-paciente_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar paciente...</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Médico responsable</label>
+                <select name="medico_id" id="hospitalizacion-medico_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="">Seleccionar médico...</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Fecha de ingreso</label>
+                <input type="datetime-local" name="fecha_ingreso" id="hospitalizacion-fecha_ingreso" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Fecha de alta (opcional)</label>
+                <input type="datetime-local" name="fecha_alta" id="hospitalizacion-fecha_alta" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Habitación</label>
+                <input type="number" name="habitacion" id="hospitalizacion-habitacion" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Cama</label>
+                <input type="number" name="cama" id="hospitalizacion-cama" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Motivo</label>
+                <input type="text" name="motivo" id="hospitalizacion-motivo" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Diagnóstico</label>
+                <input type="text" name="diagnostico" id="hospitalizacion-diagnostico" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Estado</label>
+                <select name="estado" id="hospitalizacion-estado" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="Activa">Activa</option>
+                    <option value="Alta">Alta</option>
+                    <option value="En observación">En observación</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-weight:bold; margin-bottom:4px;">Costo estimado ($)</label>
+                <input type="number" step="0.01" name="costo_estimado" id="hospitalizacion-costo_estimado" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button type="submit" id="btn-guardar-hospitalizacion" class="btn btn-primary" style="flex:1;">Guardar</button>
+                <button type="button" id="btn-cancelar-hospitalizacion" class="btn btn-danger" style="flex:0;">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-    fetch('/hospitalizaciones/api')
-        .then(r => r.json())
-        .then(data => {
-            let html = '<ul>';
-            data.forEach(h => {
-                html += `<li>Paciente: ${h.paciente_id} - Ingreso: ${h.fecha_ingreso} - Estado: ${h.estado}</li>`;
+    let pacientesList = [];
+    let medicosList = [];
+
+    // ============================================================
+    // 0. Cargar selects
+    // ============================================================
+    function cargarSelects() {
+        return Promise.all([
+            fetch('/pacientes/api').then(r => r.json()),
+            fetch('/medicos/api').then(r => r.json())
+        ]).then(([pacientes, medicos]) => {
+            pacientesList = pacientes;
+            medicosList = medicos;
+            const selPac = document.getElementById('hospitalizacion-paciente_id');
+            selPac.innerHTML = '<option value="">Seleccionar paciente...</option>';
+            pacientes.forEach(p => {
+                selPac.innerHTML += `<option value="${p._id}">${p.nombre} ${p.apellidos}</option>`;
             });
-            html += '</ul>';
-            document.getElementById('hospitalizaciones-list').innerHTML = html;
+            const selMed = document.getElementById('hospitalizacion-medico_id');
+            selMed.innerHTML = '<option value="">Seleccionar médico...</option>';
+            medicos.forEach(m => {
+                selMed.innerHTML += `<option value="${m._id}">${m.nombre} ${m.apellidos} - ${m.especialidad}</option>`;
+            });
         });
+    }
+
+    // ============================================================
+    // 1. Cargar listado
+    // ============================================================
+    function cargarHospitalizaciones() {
+        fetch('/hospitalizaciones/api')
+            .then(r => r.json())
+            .then(data => {
+                if (data.length === 0) {
+                    document.getElementById('hospitalizaciones-list').innerHTML = '<p style="color:#999;">No hay hospitalizaciones registradas.</p>';
+                    return;
+                }
+                let html = `
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#1a3e60; color:white;">
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Paciente</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Médico</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Ingreso</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Estado</th>
+                                <th style="border:1px solid #ddd; padding:10px; text-align:left;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                data.forEach(h => {
+                    const paciente = pacientesList.find(p => p._id === h.paciente_id);
+                    const medico = medicosList.find(m => m._id === h.medico_id);
+                    const nomPac = paciente ? `${paciente.nombre} ${paciente.apellidos}` : 'Desconocido';
+                    const nomMed = medico ? `${medico.nombre} ${medico.apellidos}` : 'Desconocido';
+                    const ingreso = new Date(h.fecha_ingreso).toLocaleString();
+                    html += `
+                        <tr>
+                            <td style="border:1px solid #ddd; padding:10px;">${nomPac}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${nomMed}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${ingreso}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">${h.estado}</td>
+                            <td style="border:1px solid #ddd; padding:10px;">
+                                <button onclick="editarHospitalizacion('${h._id}')" class="btn-accion" style="background:#ffc107; color:#333;">Editar</button>
+                                <button onclick="eliminarHospitalizacion('${h._id}')" class="btn-accion" style="background:#dc3545; color:white;">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+                document.getElementById('hospitalizaciones-list').innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                document.getElementById('hospitalizaciones-list').innerHTML = '<p style="color:red;">Error al cargar hospitalizaciones.</p>';
+            });
+    }
+
+    // ============================================================
+    // 2. Modal
+    // ============================================================
+    function abrirModalHospitalizacion(titulo, datos = null) {
+        document.getElementById('modal-titulo-hospitalizacion').textContent = titulo;
+        document.getElementById('modal-hospitalizacion').style.display = 'flex';
+        if (datos) {
+            document.getElementById('hospitalizacion-id').value = datos._id || '';
+            document.getElementById('hospitalizacion-paciente_id').value = datos.paciente_id || '';
+            document.getElementById('hospitalizacion-medico_id').value = datos.medico_id || '';
+            if (datos.fecha_ingreso) {
+                const fechaIng = new Date(datos.fecha_ingreso);
+                document.getElementById('hospitalizacion-fecha_ingreso').value = fechaIng.toISOString().slice(0, 16);
+            }
+            if (datos.fecha_alta) {
+                const fechaAlta = new Date(datos.fecha_alta);
+                document.getElementById('hospitalizacion-fecha_alta').value = fechaAlta.toISOString().slice(0, 16);
+            }
+            document.getElementById('hospitalizacion-habitacion').value = datos.habitacion || '';
+            document.getElementById('hospitalizacion-cama').value = datos.cama || '';
+            document.getElementById('hospitalizacion-motivo').value = datos.motivo || '';
+            document.getElementById('hospitalizacion-diagnostico').value = datos.diagnostico || '';
+            document.getElementById('hospitalizacion-estado').value = datos.estado || 'Activa';
+            document.getElementById('hospitalizacion-costo_estimado').value = datos.costo_estimado || '';
+        } else {
+            document.getElementById('form-hospitalizacion').reset();
+            document.getElementById('hospitalizacion-id').value = '';
+            document.getElementById('hospitalizacion-estado').value = 'Activa';
+        }
+    }
+
+    function cerrarModalHospitalizacion() {
+        document.getElementById('modal-hospitalizacion').style.display = 'none';
+    }
+
+    // ============================================================
+    // 3. Guardar
+    // ============================================================
+    document.getElementById('form-hospitalizacion').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('hospitalizacion-id').value;
+        const url = id ? `/hospitalizaciones/api/${id}` : '/hospitalizaciones/api';
+        const method = id ? 'PUT' : 'POST';
+
+        const data = {
+            paciente_id: document.getElementById('hospitalizacion-paciente_id').value,
+            medico_id: document.getElementById('hospitalizacion-medico_id').value,
+            fecha_ingreso: document.getElementById('hospitalizacion-fecha_ingreso').value,
+            fecha_alta: document.getElementById('hospitalizacion-fecha_alta').value || null,
+            habitacion: parseInt(document.getElementById('hospitalizacion-habitacion').value),
+            cama: parseInt(document.getElementById('hospitalizacion-cama').value),
+            motivo: document.getElementById('hospitalizacion-motivo').value.trim(),
+            diagnostico: document.getElementById('hospitalizacion-diagnostico').value.trim(),
+            estado: document.getElementById('hospitalizacion-estado').value,
+            costo_estimado: parseFloat(document.getElementById('hospitalizacion-costo_estimado').value) || 0
+        };
+
+        const btn = document.getElementById('btn-guardar-hospitalizacion');
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar');
+            return r.json();
+        })
+        .then(() => {
+            cerrarModalHospitalizacion();
+            cargarHospitalizaciones();
+            alert(id ? 'Hospitalización actualizada.' : 'Hospitalización creada.');
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error al guardar la hospitalización.');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Guardar';
+        });
+    });
+
+    // ============================================================
+    // 4. Editar
+    // ============================================================
+    function editarHospitalizacion(id) {
+        fetch(`/hospitalizaciones/api/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                abrirModalHospitalizacion('Editar Hospitalización', data);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('No se pudo cargar la hospitalización.');
+            });
+    }
+
+    // ============================================================
+    // 5. Eliminar
+    // ============================================================
+    function eliminarHospitalizacion(id) {
+        if (!confirm('¿Eliminar esta hospitalización?')) return;
+        fetch(`/hospitalizaciones/api/${id}`, { method: 'DELETE' })
+            .then(r => {
+                if (!r.ok) throw new Error('Error al eliminar');
+                return r.json();
+            })
+            .then(() => {
+                cargarHospitalizaciones();
+                alert('Hospitalización eliminada.');
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error al eliminar la hospitalización.');
+            });
+    }
+
+    // ============================================================
+    // 6. Eventos
+    // ============================================================
+    document.getElementById('btn-nuevo-hospitalizacion').addEventListener('click', function() {
+        abrirModalHospitalizacion('Nueva Hospitalización');
+    });
+    document.getElementById('btn-cancelar-hospitalizacion').addEventListener('click', cerrarModalHospitalizacion);
+    document.getElementById('modal-hospitalizacion').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModalHospitalizacion();
+    });
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarSelects().then(() => {
+            cargarHospitalizaciones();
+        });
+    });
 </script>
+
+<style>
+    .btn { display:inline-block; padding:10px 20px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; text-decoration:none; color:white; font-size:14px; }
+    .btn-success { background:#28a745; }
+    .btn-success:hover { background:#218838; }
+    .btn-primary { background:#1a3e60; }
+    .btn-primary:hover { background:#2a5a7a; }
+    .btn-danger { background:#dc3545; color:white; }
+    .btn-danger:hover { background:#c82333; }
+    .btn-accion { border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:13px; margin-right:4px; }
+    .btn-accion:hover { opacity:0.8; }
+    label { font-weight:600; font-size:14px; }
+    input, select, textarea { font-size:14px; }
+</style>
 {% endblock %}

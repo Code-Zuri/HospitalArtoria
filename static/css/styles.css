@@ -1,0 +1,262 @@
+/* ============================================================
+   HOSPITAL ARTORIA — DESIGN SYSTEM
+   Hoja de estilos global. No modifica ninguna lógica de Flask/
+   Jinja ni el JavaScript existente en las plantillas: únicamente
+   aplica la identidad visual (colores, tipografía, componentes)
+   sobre las clases y elementos ya presentes en los templates.
+   ============================================================ */
+
+:root{
+  --teal:#31A093;
+  --teal-dark:#25786D;
+  --teal-light:#E7F4F1;
+  --teal-softer:#F4FAF8;
+  --ink:#16241F;
+  --ink-soft:#5A6B65;
+  --ink-faint:#94A29D;
+  --line:#E5EAE8;
+  --bg:#F5F6F5;
+  --panel:#FFFFFF;
+  --red:#C4463C;
+  --red-soft:#FBEEEC;
+  --amber:#B8863A;
+  --amber-soft:#FBF3E4;
+  --blue:#3E63B5;
+  --radius-lg:16px;
+  --radius-md:12px;
+  --radius-sm:9px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Plus Jakarta Sans', sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  font-size:14px;
+  line-height:1.5;
+}
+a{text-decoration:none; color:var(--teal-dark); font-weight:600;}
+a:hover{text-decoration:underline;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+img{max-width:100%;}
+
+/* ================= LOADING BAR ================= */
+#loadingBar{
+  position:fixed; top:0; left:0; height:3px; width:0%;
+  background:var(--teal); z-index:999; opacity:0;
+  transition:opacity .2s ease;
+}
+
+/* ================= APP LAYOUT ================= */
+.app{ display:grid; grid-template-columns:236px 1fr; min-height:100vh; }
+
+/* ================= SIDEBAR ================= */
+.sidebar{
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  padding:24px 16px;
+  display:flex; flex-direction:column;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:2px 6px 22px 6px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+.brand-mark{
+  width:34px;height:34px; border-radius:9px;
+  background:var(--teal);
+  display:flex;align-items:center;justify-content:center; flex-shrink:0;
+}
+.brand-mark svg{width:18px;height:18px;stroke:#fff;}
+.brand-name{ font-weight:800; font-size:15px; letter-spacing:-0.01em; line-height:1.2; color:var(--ink); }
+.brand-name span{ display:block; font-family:'IBM Plex Mono', monospace; font-weight:500; font-size:9.5px; letter-spacing:0.08em; color:var(--ink-faint); text-transform:uppercase; margin-top:2px; }
+
+.nav-group{margin-bottom:20px;}
+.nav-label{ font-size:10px; font-weight:700; letter-spacing:0.09em; color:var(--ink-faint); text-transform:uppercase; padding:0 10px; margin-bottom:8px; }
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:8px 10px;
+  border-radius:8px; color:var(--ink-soft); font-weight:600; font-size:13px;
+  margin-bottom:1px; position:relative; border-left:2px solid transparent;
+}
+.nav-item svg{width:16px;height:16px; flex-shrink:0;}
+.nav-item:hover{color:var(--ink); background:var(--teal-softer); text-decoration:none;}
+.nav-item.active{ color:var(--teal-dark); border-left:2px solid var(--teal); background:var(--teal-softer); }
+.sidebar-bottom{margin-top:auto; padding-top:14px; border-top:1px solid var(--line);}
+
+/* User block in sidebar */
+.user-profile{ display:flex; align-items:center; gap:10px; padding:12px 10px 4px 10px; margin-top:8px; }
+.user-avatar{ width:36px;height:36px;border-radius:50%; object-fit:cover; border:1px solid var(--line); flex-shrink:0; }
+.user-info{ line-height:1.25; min-width:0; }
+.user-info strong{ display:block; font-size:12.5px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-info span{ display:block; font-size:11px; color:var(--ink-faint); font-weight:600; text-transform:capitalize; }
+.logout-btn{
+  margin-left:auto; width:30px;height:30px;border-radius:8px;
+  border:1px solid var(--line); background:var(--panel);
+  display:flex;align-items:center;justify-content:center; color:var(--ink-soft); flex-shrink:0;
+}
+.logout-btn svg{width:15px;height:15px;}
+.logout-btn:hover{ border-color:var(--red); color:var(--red); text-decoration:none; }
+
+/* ================= MAIN / CONTAINER ================= */
+.container{ padding:26px 32px 46px 32px; min-width:0; }
+
+.container h2{
+  font-size:21px; font-weight:800; letter-spacing:-0.015em; color:var(--ink);
+  margin:0 0 20px 0;
+}
+.container h3{ font-size:14px; font-weight:800; color:var(--ink); margin:0 0 12px 0; }
+.container p{ color:var(--ink-soft); font-size:13px; }
+
+/* ================= FLASH MESSAGES ================= */
+.flash-messages{ display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+[class^="flash-"]{ padding:12px 16px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:700; border:1px solid transparent; }
+.flash-success{ background:var(--teal-softer); color:var(--teal-dark); border-color:var(--teal-light); }
+.flash-error, .flash-danger{ background:var(--red-soft); color:var(--red); border-color:#F3D9D5; }
+.flash-warning{ background:var(--amber-soft); color:var(--amber); border-color:#F0E1BE; }
+.flash-info, .flash-message{ background:var(--teal-softer); color:var(--ink-soft); border-color:var(--line); }
+
+/* ================= BUTTONS ================= */
+button, input[type="submit"]{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:10px 16px; border-radius:var(--radius-sm);
+  border:1px solid var(--teal); background:var(--teal); color:#fff;
+  font-size:12.5px; font-weight:700;
+}
+button:hover, input[type="submit"]:hover{ background:var(--teal-dark); border-color:var(--teal-dark); }
+
+/* Botones de eliminar (detectados por su confirm() en el onclick) se muestran como acción destructiva discreta */
+button[onclick*="Eliminar" i], button[onclick*="eliminar" i]{
+  background:var(--panel); border-color:var(--red-soft); color:var(--red);
+}
+button[onclick*="Eliminar" i]:hover, button[onclick*="eliminar" i]:hover{ background:var(--red-soft); border-color:var(--red); }
+
+/* ================= FORMS ================= */
+.container form{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg);
+  padding:24px; margin-bottom:20px; max-width:560px;
+}
+.container form > div{ display:flex; flex-direction:column; gap:6px; margin-bottom:15px; }
+.container form label{ font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+.container form input, .container form select, .container form textarea{
+  border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 12px;
+  font-size:13px; color:var(--ink); background:var(--panel); width:100%; outline:none;
+}
+.container form input:focus, .container form select:focus, .container form textarea:focus{ border-color:var(--teal); }
+.container form input[type="file"]{ padding:8px; }
+.container form button{ margin-top:4px; }
+
+/* Formularios inline dentro de tablas (p.ej. botón Eliminar) no deben verse como tarjeta */
+.container table form{
+  background:none; border:none; padding:0; margin:0; max-width:none; display:inline;
+}
+
+/* ================= TABLES ================= */
+.container table{
+  width:100%; border-collapse:collapse; background:var(--panel);
+  border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden;
+  margin-bottom:20px;
+}
+.container thead th{
+  background:var(--teal-softer); text-align:left; font-size:10px; font-weight:700;
+  color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em;
+  padding:12px 14px; border-bottom:1px solid var(--line);
+}
+.container tbody td{ padding:12px 14px; font-size:12.5px; font-weight:600; color:var(--ink); border-bottom:1px solid var(--line); vertical-align:middle; }
+.container tbody tr:last-child td{ border-bottom:none; }
+.container tbody tr:hover{ background:var(--teal-softer); }
+.container table a{ font-size:12px; font-weight:700; margin-right:10px; }
+.container table button{ padding:6px 11px; font-size:11px; border-radius:7px; }
+.container table img{ display:block; }
+
+/* ================= LISTS (contenido cargado por fetch) ================= */
+.container ul{ list-style:none; padding:0; margin:0 0 4px 0; }
+.container li{
+  padding:12px 6px; font-size:13px; font-weight:600; color:var(--ink);
+  border-bottom:1px solid var(--line);
+}
+.container li:last-child{ border-bottom:none; }
+.container li:hover{ background:var(--teal-softer); }
+
+/* ================= GENERIC CONTENT WRAPPERS ================= */
+/* Cualquier <div> directo dentro del contenido (secciones, listados, módulos)
+   recibe el tratamiento de tarjeta plana, salvo grids y modales que ya
+   gestionan su propio estilo. */
+.container > div:not(.kpi-grid):not(.charts-row):not(.modal):not(.auth-wrap){
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg);
+  padding:20px; margin-bottom:16px;
+}
+.container > div:not(.kpi-grid):not(.charts-row):not(.modal):not(.auth-wrap) > h3:first-child{
+  margin-top:0;
+}
+
+/* ================= KPI GRID ================= */
+.kpi-grid{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr));
+  gap:14px; margin-bottom:20px;
+}
+.kpi-grid > div{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg);
+  padding:16px 18px; font-size:12.5px; font-weight:700; color:var(--ink);
+}
+.kpi-item{ display:flex; flex-direction:column; gap:6px; }
+.kpi-label{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); }
+.kpi-value{ display:block; font-size:22px; font-weight:800; color:var(--ink); letter-spacing:-0.01em; }
+
+/* ================= CHARTS ================= */
+.charts-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.chart-box{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg); padding:18px; }
+.chart-box h3{ margin:0 0 14px 0; }
+.container > canvas{
+  display:block; background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--radius-lg); padding:16px; margin-bottom:16px; max-width:100%;
+}
+.dashboard-container{ max-width:1400px; }
+
+/* ================= MODAL ================= */
+.modal{
+  display:none; position:fixed; inset:0; background:rgba(22,36,31,0.45);
+  align-items:center; justify-content:center; z-index:200; padding:20px;
+}
+.modal.open, .modal.active{ display:flex; }
+.modal-content{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg);
+  padding:24px; width:440px; max-width:100%; max-height:86vh; overflow-y:auto; position:relative;
+}
+.modal-close{
+  position:absolute; top:14px; right:16px; width:28px;height:28px;border-radius:8px;
+  border:1px solid var(--line); display:flex;align-items:center;justify-content:center;
+  color:var(--ink-soft); font-size:16px; line-height:1; background:var(--panel);
+}
+.modal-close:hover{ border-color:var(--teal); color:var(--teal-dark); }
+.modal-title{ margin:0 0 16px 0; padding-right:30px; }
+.modal-content form{ border:none; padding:0; margin:0; max-width:none; }
+
+/* ================= LOGIN MESSAGE / EMPTY STATES ================= */
+.login-message{
+  text-align:center; padding:60px 24px; background:var(--panel);
+  border:1px solid var(--line); border-radius:var(--radius-lg); margin:40px 0;
+}
+.login-message h2{ color:var(--ink); }
+.login-message a{ color:var(--teal-dark); font-weight:700; }
+
+/* ================= PRE / CODE OUTPUT (machine learning) ================= */
+pre{
+  background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:12px 14px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+  color:var(--ink-soft); overflow-x:auto;
+}
+
+/* ================= TOAST (si alguna plantilla lo utiliza) ================= */
+#toast{
+  position:fixed; bottom:24px; left:50%; background:var(--ink); color:#fff;
+  padding:11px 17px; border-radius:10px; font-size:12px; font-weight:600;
+  display:flex; align-items:center; gap:8px; opacity:0; pointer-events:none; z-index:300;
+}
+#toast svg{width:14px;height:14px; color:var(--teal);}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px){
+  .app{ grid-template-columns:1fr; }
+  .sidebar{ position:relative; height:auto; }
+  .charts-row{ grid-template-columns:1fr; }
+}

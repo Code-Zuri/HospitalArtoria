@@ -1,7 +1,14 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Gestión de Usuarios</h2>
-<a href="{{ url_for('admin.crear_usuario') }}"><button>Crear nuevo usuario</button></a>
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+    <h2 style="margin:0;">Gestión de Usuarios</h2>
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('admin.crear_usuario') }}" class="btn btn-primary">+ Nuevo usuario</a>
+        <a href="{{ url_for('medicos.listar') }}" class="btn btn-success">+ Nuevo médico</a>
+    </div>
+</div>
+
 <table>
     <thead>
         <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Foto</th><th>Acciones</th></tr>
@@ -31,3 +38,35 @@
     </tbody>
 </table>
 {% endblock %}
+
+<style>
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #1a3e60;
+        color: white;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-primary {
+        background: #1a3e60;
+    }
+    .btn-primary:hover {
+        background: #2a5a7a;
+    }
+    .btn-success {
+        background: #28a745;
+    }
+    .btn-success:hover {
+        background: #218838;
+    }
+    .btn-danger {
+        background: #dc3545;
+    }
+    .btn-danger:hover {
+        background: #c82333;
+    }
+</style>
