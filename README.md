@@ -1,118 +1,287 @@
-Sistema Integral de Gestión Hospitalaria
-Sistema web para la administración, análisis y visualización de datos hospitalarios, con autenticación por roles y módulos de Machine Learning para la toma de decisiones.
+# Sistema Integral de Gestión Hospitalaria
 
-📋 Descripción
-Este sistema permite gestionar pacientes, médicos, citas, consultas, diagnósticos, tratamientos, hospitalizaciones y pagos. Incluye un dashboard interactivo con gráficas (Chart.js), un módulo de Machine Learning (clasificación, regresión y clustering) y la generación de informes en PDF y ODF. Está desarrollado con Flask, MongoDB Atlas y Python, y cuenta con un sistema de autenticación por roles (admin, médico, recepcionista, enfermería).
+Sistema web para la administración, análisis y visualización de datos hospitalarios, con autenticación por roles y módulos de Machine Learning orientados a la toma de decisiones.
 
-Características principales:
+---
 
-🔐 Autenticación con roles y gestión de usuarios.
+## Descripción
 
-🏥 CRUD completo para pacientes, médicos, citas, consultas, diagnósticos, tratamientos y hospitalizaciones.
+El **Sistema Integral de Gestión Hospitalaria** permite administrar diferentes procesos relacionados con la operación de una institución hospitalaria.
 
-📊 Dashboard con KPIs y gráficas interactivas (consultas por mes, demanda por especialidad, enfermedades frecuentes, ocupación, etc.).
+El sistema permite gestionar:
 
-🤖 Machine Learning: riesgo de cancelación de citas (clasificación), predicción de demanda y costos (regresión), clustering de pacientes.
+* Pacientes
+* Médicos
+* Citas
+* Consultas
+* Diagnósticos
+* Tratamientos
+* Hospitalizaciones
+* Pagos
+* Usuarios y roles
 
-📄 Generación de informes en PDF (desde el navegador con html2pdf.js) y en formato ODF (descarga desde el servidor).
+Además, incorpora un **dashboard interactivo** con indicadores y gráficas, un módulo de **Machine Learning** para análisis predictivo y generación de informes en formatos **PDF y ODF**.
 
-🖼️ Subida de foto de perfil para usuarios del sistema.
+### Características principales
 
-🗄️ Base de datos MongoDB Atlas con índices optimizados.
+* Autenticación de usuarios mediante roles.
+* Gestión de usuarios administrativos.
+* Roles disponibles:
 
-🛠️ Tecnologías utilizadas
-Tecnología	Versión	Propósito
-Python	3.11+	Lenguaje de programación principal
-Flask	2.3.3	Framework web para el backend
-MongoDB Atlas	-	Base de datos NoSQL en la nube
-PyMongo	4.6.1	Conector para MongoDB
-Pandas	2.1.4	Manipulación y análisis de datos
-NumPy	1.26.3	Operaciones numéricas
-Scikit-learn	1.4.0	Machine Learning
-Chart.js	3.9.1	Visualización de gráficas (CDN)
-html2pdf.js	0.10.1	Generación de PDF desde el navegador
-odfpy	1.4.1	Generación de informes ODF (opcional)
-⚙️ Instalación y configuración
-Requisitos previos
-Python 3.11 o superior instalado.
+  * Administrador
+  * Médico
+  * Recepcionista
+  * Enfermería
+* CRUD completo para pacientes, médicos, citas, consultas, diagnósticos, tratamientos y hospitalizaciones.
+* Dashboard con KPIs y gráficas interactivas.
+* Visualización de:
 
-Cuenta en MongoDB Atlas (o MongoDB local).
+  * Consultas por mes.
+  * Demanda por especialidad.
+  * Enfermedades frecuentes.
+  * Ocupación hospitalaria.
+  * Costos de atención.
+  * Indicadores generales del hospital.
+* Machine Learning para:
 
-(Opcional) Clave de API de Gemini para el seeding con IA.
+  * Clasificación.
+  * Regresión.
+  * Clustering.
+* Predicción del riesgo de cancelación de citas.
+* Predicción de demanda de consultas.
+* Predicción de costos de atención.
+* Agrupación de pacientes mediante clustering.
+* Generación de informes PDF.
+* Generación de informes ODF.
+* Subida de fotografías de perfil.
+* Base de datos MongoDB Atlas.
+* Índices optimizados para mejorar el rendimiento de las consultas.
 
-Pasos
-Clonar el repositorio
+---
 
-bash
+## Tecnologías utilizadas
+
+| Tecnología    | Versión | Propósito                            |
+| ------------- | ------: | ------------------------------------ |
+| Python        |   3.11+ | Lenguaje de programación principal   |
+| Flask         |   2.3.3 | Framework web para el backend        |
+| MongoDB Atlas |       - | Base de datos NoSQL en la nube       |
+| PyMongo       |   4.6.1 | Conector para MongoDB                |
+| Pandas        |   2.1.4 | Manipulación y análisis de datos     |
+| NumPy         |  1.26.3 | Operaciones numéricas                |
+| Scikit-learn  |   1.4.0 | Machine Learning                     |
+| Chart.js      |   3.9.1 | Visualización de gráficas            |
+| html2pdf.js   |  0.10.1 | Generación de PDF desde el navegador |
+| odfpy         |   1.4.1 | Generación de informes ODF           |
+
+---
+
+## Requisitos previos
+
+Antes de instalar el proyecto se requiere:
+
+* Python 3.11 o superior.
+* MongoDB Atlas o una instalación local de MongoDB.
+* Git.
+* Pip.
+* Navegador web moderno.
+
+### Opcional
+
+Para utilizar el sistema de generación de datos mediante inteligencia artificial:
+
+* Cuenta de Google AI Studio.
+* API Key de Gemini.
+
+---
+
+## Instalación y configuración
+
+### 1. Clonar el repositorio
+
+```bash
 git clone https://github.com/tu-usuario/tu-repositorio.git
 cd tu-repositorio
-Crear y activar un entorno virtual
+```
 
-bash
+### 2. Crear un entorno virtual
+
+#### Windows
+
+```powershell
 python -m venv venv
-source venv/bin/activate      # Linux/macOS
-venv\Scripts\activate         # Windows
-Instalar dependencias
+venv\Scripts\activate
+```
 
-bash
+#### Linux / macOS
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Instalar dependencias
+
+```bash
 pip install -r requirements.txt
-Configurar variables de entorno
+```
 
-Crea un archivo .env en la raíz del proyecto con el siguiente contenido:
+### 4. Configurar las variables de entorno
 
-env
+Crea un archivo `.env` en la raíz del proyecto:
+
+```env
 MONGO_URI=mongodb+srv://<usuario>:<contraseña>@<cluster>.mongodb.net/
 DATABASE_NAME=hospital_artoria
 SECRET_KEY=tu_clave_secreta_aqui
-GEMINI_API_KEY=tu_clave_de_gemini   # (opcional, solo para seeding)
-MONGO_URI: Cadena de conexión a MongoDB Atlas (sin el nombre de la base de datos).
+GEMINI_API_KEY=tu_clave_de_gemini
+```
 
-DATABASE_NAME: Nombre de la base de datos (ej. hospital_artoria).
+### Variables disponibles
 
-SECRET_KEY: Clave secreta para las sesiones de Flask (puedes generarla con os.urandom(24).hex()).
+| Variable         | Descripción                                |
+| ---------------- | ------------------------------------------ |
+| `MONGO_URI`      | Cadena de conexión de MongoDB Atlas        |
+| `DATABASE_NAME`  | Nombre de la base de datos                 |
+| `SECRET_KEY`     | Clave utilizada para las sesiones de Flask |
+| `GEMINI_API_KEY` | API Key de Gemini para generación de datos |
 
-GEMINI_API_KEY: Solo necesaria si deseas generar datos de prueba con Gemini (opcional).
+> `GEMINI_API_KEY` es opcional y solamente es necesaria para las funciones de generación de datos mediante Gemini.
 
-Inicializar la base de datos (opcional)
+### Generar una SECRET_KEY
 
-Si quieres poblar la base de datos con datos de prueba, ejecuta:
+Puedes generar una clave segura utilizando Python:
 
-bash
+```python
+import os
+print(os.urandom(24).hex())
+```
+
+---
+
+## Inicialización de la base de datos
+
+Para poblar la base de datos con información de prueba puedes ejecutar:
+
+```bash
 python seed_db.py --clean
-Esto intentará generar datos con Gemini (si tienes la clave) o usará datos de respaldo generados aleatoriamente.
+```
 
-Ejecutar la aplicación
+El proceso intentará utilizar Gemini para generar los datos cuando exista una `GEMINI_API_KEY` configurada.
 
-bash
+Si Gemini no está disponible, el sistema puede utilizar datos generados localmente como respaldo.
+
+---
+
+## Ejecutar la aplicación
+
+Una vez configurado el proyecto:
+
+```bash
 python app.py
-La aplicación estará disponible en http://127.0.0.1:5000.
+```
 
-👤 Usuario administrador por defecto
-Si la base de datos está vacía, al ejecutar app.py se crea automáticamente un usuario administrador:
+La aplicación estará disponible en:
 
+```text
+http://127.0.0.1:5000
+```
+
+También puedes acceder mediante:
+
+```text
+http://localhost:5000
+```
+
+---
+
+## Usuario administrador por defecto
+
+Si la base de datos se encuentra vacía, la aplicación crea automáticamente un usuario administrador.
+
+```text
 Usuario: admin
-
 Contraseña: admin123
+```
 
-Cambia esta contraseña en producción.
+> **Importante:** cambia esta contraseña inmediatamente en un entorno de producción.
 
-📁 Estructura del proyecto
-text
+---
+
+## Roles del sistema
+
+El sistema utiliza autenticación basada en roles.
+
+| Rol           | Funciones principales                             |
+| ------------- | ------------------------------------------------- |
+| Administrador | Gestión completa del sistema y usuarios           |
+| Médico        | Consultas, diagnósticos, tratamientos y pacientes |
+| Recepcionista | Gestión de pacientes y citas                      |
+| Enfermería    | Gestión y seguimiento de hospitalizaciones        |
+
+Los permisos pueden controlarse mediante los decoradores de autorización implementados en el proyecto.
+
+---
+
+## Estructura del proyecto
+
+```text
 HospitalArtoria/
-├── app.py                      # Punto de entrada
-├── requirements.txt            # Dependencias
-├── .env                        # Variables de entorno (no subir a git)
-├── seed_db.py                  # Script para poblar la BD
-├── decorators.py               # Decoradores de autenticación y roles
+│
+├── app.py
+├── requirements.txt
+├── .env
+├── .gitignore
+├── seed_db.py
+├── decorators.py
+│
 ├── database/
-│   └── mongodb.py              # Configuración de la conexión a MongoDB
-├── models/                     # Modelos CRUD (pacientes, médicos, citas, etc.)
-├── routes/                     # Rutas Flask (blueprints)
-├── services/                   # Servicios de análisis y generación de datos
-├── ml/                         # Módulo de Machine Learning
-├── utils/                      # Utilidades (conversión de ObjectId, etc.)
-├── static/                     # Archivos estáticos (CSS, JS, imágenes, uploads)
-└── templates/                  # Plantillas HTML (Jinja2)
+│   └── mongodb.py
+│
+├── models/
+│   ├── paciente.py
+│   ├── medico.py
+│   ├── cita.py
+│   ├── consulta.py
+│   ├── diagnostico.py
+│   ├── tratamiento.py
+│   ├── hospitalizacion.py
+│   └── pago.py
+│
+├── routes/
+│   ├── auth.py
+│   ├── pacientes.py
+│   ├── medicos.py
+│   ├── citas.py
+│   ├── consultas.py
+│   ├── diagnosticos.py
+│   ├── tratamientos.py
+│   ├── hospitalizaciones.py
+│   ├── pagos.py
+│   ├── reportes.py
+│   └── machine_learning.py
+│
+├── services/
+│   ├── analytics.py
+│   ├── reports.py
+│   └── data_service.py
+│
+├── ml/
+│   ├── classification.py
+│   ├── regression.py
+│   ├── clustering.py
+│   └── preprocessing.py
+│
+├── utils/
+│   └── helpers.py
+│
+├── static/
+│   ├── css/
+│   ├── js/
+│   ├── images/
+│   └── uploads/
+│
+└── templates/
     ├── base.html
     ├── index.html
     ├── login.html
@@ -126,48 +295,465 @@ HospitalArtoria/
     ├── hospitalizaciones.html
     ├── reportes.html
     ├── machine_learning.html
-    └── admin/                  # Plantillas del panel de administración
-🚀 Despliegue en producción
-Render (recomendado)
-Crea un archivo Procfile en la raíz con:
+    │
+    └── admin/
+        ├── dashboard.html
+        └── usuarios.html
+```
 
-text
+---
+
+# Dashboard
+
+El sistema cuenta con un dashboard diseñado para proporcionar una vista general del estado de la institución.
+
+Entre los principales indicadores se encuentran:
+
+* Total de pacientes.
+* Total de médicos.
+* Citas registradas.
+* Consultas realizadas.
+* Hospitalizaciones activas.
+* Ingresos.
+* Ocupación hospitalaria.
+* Demanda por especialidad.
+* Enfermedades más frecuentes.
+
+Las gráficas son generadas mediante **Chart.js**.
+
+---
+
+# Machine Learning
+
+El sistema incorpora un módulo de Machine Learning desarrollado con **Python, Pandas, NumPy y Scikit-learn**.
+
+El objetivo es utilizar los datos hospitalarios para generar análisis predictivos que puedan apoyar la toma de decisiones.
+
+## 1. Clasificación
+
+### Predicción del riesgo de cancelación de citas
+
+El modelo intenta determinar si una cita tiene una probabilidad alta o baja de ser cancelada.
+
+Modelo utilizado:
+
+```text
+Random Forest Classifier
+```
+
+### Métricas
+
+* Accuracy
+* Precision
+* Recall
+* F1-Score
+* Matriz de confusión
+
+---
+
+## 2. Regresión
+
+La regresión permite realizar predicciones sobre variables numéricas.
+
+### Predicción de demanda
+
+El modelo puede utilizar información histórica para estimar la demanda futura de consultas.
+
+### Predicción de costos
+
+Permite estimar costos relacionados con la atención hospitalaria.
+
+Modelo utilizado:
+
+```text
+Random Forest Regressor
+```
+
+### Métricas
+
+* MAE
+* MSE
+* RMSE
+* R²
+* MAPE
+
+---
+
+## 3. Clustering
+
+El clustering permite identificar grupos de pacientes con características similares.
+
+Modelo utilizado:
+
+```text
+K-Means
+```
+
+Variables utilizadas inicialmente:
+
+* Edad.
+* Número de consultas.
+
+Esto permite identificar diferentes perfiles de pacientes y facilitar el análisis de comportamiento.
+
+---
+
+## Flujo de Machine Learning
+
+El procesamiento general de los modelos sigue el siguiente flujo:
+
+```text
+MongoDB Atlas
+      │
+      ▼
+Extracción de datos
+      │
+      ▼
+Pandas / NumPy
+      │
+      ▼
+Preprocesamiento
+      │
+      ▼
+Entrenamiento del modelo
+      │
+      ▼
+Evaluación
+      │
+      ▼
+Predicción
+      │
+      ▼
+Visualización en Dashboard
+```
+
+Los datos se preprocesan antes de entrenar los modelos para evitar problemas relacionados con fechas, tipos de datos y objetos de MongoDB.
+
+---
+
+# Generación de informes
+
+El sistema permite generar informes a partir de los datos almacenados en MongoDB.
+
+## PDF
+
+Los informes PDF se generan desde el navegador utilizando:
+
+```text
+html2pdf.js
+```
+
+Los informes pueden incluir:
+
+* KPIs.
+* Gráficas.
+* Información de pacientes.
+* Información de médicos.
+* Estadísticas hospitalarias.
+* Resultados del análisis.
+
+El módulo de reportes puede ser accedido desde:
+
+```text
+/reportes
+```
+
+---
+
+## ODF
+
+El sistema también permite generar documentos en formato abierto mediante:
+
+```text
+odfpy
+```
+
+Los documentos `.odt` pueden incluir:
+
+* KPIs.
+* Estadísticas.
+* Tablas.
+* Información hospitalaria.
+
+Los archivos son generados desde el servidor y enviados al navegador para su descarga.
+
+---
+
+# Seguridad
+
+El proyecto implementa diferentes mecanismos de seguridad:
+
+* Variables sensibles mediante `.env`.
+* Autenticación de usuarios.
+* Autorización mediante roles.
+* Protección de rutas.
+* Contraseñas almacenadas de forma segura.
+* Separación de responsabilidades mediante módulos.
+* `.env` excluido del repositorio mediante `.gitignore`.
+
+### Importante
+
+Nunca publiques información sensible como:
+
+```text
+MONGO_URI
+GEMINI_API_KEY
+SECRET_KEY
+Contraseñas
+Tokens
+API Keys
+```
+
+El archivo `.env` debe permanecer fuera del repositorio.
+
+---
+
+# Despliegue en producción
+
+## Render
+
+Una opción recomendada para desplegar el sistema es **Render**.
+
+### 1. Crear Procfile
+
+Crea un archivo llamado:
+
+```text
+Procfile
+```
+
+Con el siguiente contenido:
+
+```text
 web: gunicorn app:app
-Sube el proyecto a un repositorio de GitHub.
+```
 
-Ve a Render.com y crea un nuevo Web Service conectado a tu repositorio.
+### 2. Subir el proyecto a GitHub
 
-Configura el entorno:
+```bash
+git add .
+git commit -m "Deploy HospitalArtoria"
+git push origin main
+```
 
-Build Command: pip install -r requirements.txt
+### 3. Crear Web Service
 
-Start Command: gunicorn app:app
+En Render:
 
-Añade las mismas variables de entorno que en .env en el panel de Render.
+1. Crear un nuevo Web Service.
+2. Conectar el repositorio de GitHub.
+3. Seleccionar el repositorio del proyecto.
+4. Configurar el entorno Python.
 
-Haz clic en Deploy. En minutos tu aplicación estará en línea en https://tu-servicio.onrender.com.
+### Build Command
 
-Nota: En el plan gratuito, la aplicación se "duerme" tras 15 minutos de inactividad; la primera visita puede tardar unos segundos en despertar.
+```bash
+pip install -r requirements.txt
+```
 
-Alternativas
-PythonAnywhere: ideal para principiantes, con interfaz web clara.
+### Start Command
 
-Koyeb: similar a Render, con buen rendimiento.
+```bash
+gunicorn app:app
+```
 
-Railway: fácil de usar, pero con un plan gratuito más limitado.
+### Variables de entorno
 
-📊 Módulo de Machine Learning
-El sistema incluye tres tipos de modelos:
+Agrega en Render las mismas variables configuradas en `.env`:
 
-Clasificación – Riesgo de cancelación de citas (Random Forest). Métricas: accuracy, precision, recall, F1-score, matriz de confusión.
+```text
+MONGO_URI
+DATABASE_NAME
+SECRET_KEY
+GEMINI_API_KEY
+```
 
-Regresión – Predicción de demanda de consultas y costos de atención (Random Forest). Métricas: MAE, MSE, RMSE, R², MAPE.
+Después inicia el despliegue.
 
-Clustering – Agrupación de pacientes por edad y número de consultas (K-Means).
+---
 
-Los modelos se entrenan bajo demanda desde la interfaz /machine-learning. Los datos se preprocesan en Python (Pandas) para evitar problemas de conversión de fechas en MongoDB.
+## Otras alternativas de despliegue
 
-📄 Generación de informes
-PDF: Se genera desde el navegador con html2pdf.js e incluye KPIs, 6 gráficas explicadas, tablas de pacientes (100) y médicos (50). Se activa desde el dashboard (/reportes).
+También es posible desplegar el proyecto utilizando:
 
-ODF: Informe en formato abierto (.odt) que se descarga desde el servidor, con KPIs y tablas.
+* PythonAnywhere
+* Koyeb
+* Railway
+* AWS
+* Docker
+* VPS
+
+---
+
+# Base de datos
+
+El sistema utiliza **MongoDB Atlas** como base de datos principal.
+
+La información se organiza mediante diferentes colecciones relacionadas con los módulos del sistema.
+
+Entre las principales entidades se encuentran:
+
+```text
+usuarios
+pacientes
+medicos
+citas
+consultas
+diagnosticos
+tratamientos
+hospitalizaciones
+pagos
+```
+
+Se utilizan índices para optimizar las consultas más frecuentes y mejorar el rendimiento de la aplicación.
+
+---
+
+# Flujo general del sistema
+
+```text
+                    ┌─────────────────────┐
+                    │       Usuario       │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Autenticación     │
+                    │      por roles      │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │      Dashboard      │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+        ┌───────────┐    ┌────────────┐   ┌────────────┐
+        │ Gestión   │    │ Analítica  │   │    ML      │
+        │ hospital. │    │ Dashboard  │   │ Modelos    │
+        └─────┬─────┘    └──────┬─────┘   └──────┬─────┘
+              │                 │                │
+              └─────────────────┼────────────────┘
+                                ▼
+                       ┌─────────────────┐
+                       │   MongoDB Atlas │
+                       └────────┬────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │    Reportes     │
+                       │    PDF / ODF    │
+                       └─────────────────┘
+```
+
+---
+
+# Comandos principales
+
+### Crear entorno virtual
+
+```bash
+python -m venv venv
+```
+
+### Activar entorno en Windows
+
+```powershell
+venv\Scripts\activate
+```
+
+### Activar entorno en Linux/macOS
+
+```bash
+source venv/bin/activate
+```
+
+### Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+### Poblar la base de datos
+
+```bash
+python seed_db.py --clean
+```
+
+### Ejecutar la aplicación
+
+```bash
+python app.py
+```
+
+### Ejecutar en modo desarrollo
+
+```bash
+flask --app app run --debug
+```
+
+---
+
+# Estado del proyecto
+
+El proyecto está orientado a funcionar como una plataforma integral para la gestión y análisis de información hospitalaria.
+
+Actualmente contempla:
+
+* Gestión hospitalaria.
+* Autenticación y autorización por roles.
+* MongoDB Atlas.
+* Dashboard analítico.
+* Machine Learning.
+* Predicciones.
+* Clustering.
+* Generación de informes.
+* Exportación PDF.
+* Exportación ODF.
+* Generación de datos de prueba.
+* Arquitectura modular mediante Flask.
+
+---
+
+# Mejoras futuras
+
+Entre las posibles mejoras del proyecto se encuentran:
+
+* Implementar un sistema avanzado de notificaciones.
+* Integrar correo electrónico para recordatorios de citas.
+* Implementar recuperación de contraseña.
+* Mejorar el sistema de auditoría.
+* Agregar historial médico completo.
+* Incorporar modelos de Machine Learning adicionales.
+* Implementar predicción de ocupación hospitalaria.
+* Implementar predicción de costos hospitalarios.
+* Mejorar la predicción de demanda.
+* Agregar detección de anomalías.
+* Incorporar modelos de Deep Learning.
+* Implementar un sistema de recomendaciones.
+* Agregar exportación a Excel.
+* Incorporar generación automática de reportes.
+* Mejorar el sistema de permisos.
+* Implementar pruebas automatizadas.
+* Implementar CI/CD.
+* Containerizar la aplicación mediante Docker.
+
+---
+
+# Licencia
+
+Este proyecto fue desarrollado con fines académicos y educativos.
+
+La licencia y condiciones de distribución pueden definirse posteriormente de acuerdo con los objetivos del proyecto.
+
+---
+
+# Autor
+
+**Uriel Valle Alejo**
+
+Proyecto académico:
+
+**Sistema Integral de Gestión Hospitalaria — HospitalArtoria**
